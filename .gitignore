@@ -1,0 +1,32 @@
+# Python environment
+venv/
+.env
+.venv/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Project-specific
+outputs/
+storage/*.db
+!storage/.gitkeep
+
+# Trace outputs
+outputs/traces/
+
+# IDE specific
+.vscode/
+.idea/
+
+# Distribution
+dist/
+build/
+egg/
+eggs/
+*.egg-info/
+
+# Documentation (exclude from repo - kept separately)
+*.md
+*.txt

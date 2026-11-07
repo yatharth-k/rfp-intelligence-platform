@@ -1,0 +1,93 @@
+# Service 01: Synonym Groups
+# Used by query rewriter (service 10) for query expansion and model term addition.
+# Each group covers a concept that may be referred to by multiple terms in RFP documents.
+
+bids:
+  term: "bids"
+  synonyms: ["proposals", "RFPs", "tenders", "quotes", "submissions"]
+  doc_types: [rfp, addendum]
+
+due_date:
+  term: "due date"
+  synonyms: ["deadline", "submission deadline", "bid due date", "closing date", "expiration date"]
+  doc_types: [rfp, addendum]
+
+contract_price:
+  term: "contract price"
+  synonyms: ["bid price", "total cost", "project price", "quoted price", "estimate"]
+  doc_types: [rfp, addendum]
+
+scope:
+  term: "scope"
+  synonyms: ["statement of work", "SOW", "work scope", "deliverables", "project scope"]
+  doc_types: [rfp, addendum]
+
+payment:
+  term: "payment"
+  synonyms: ["payments", "payment terms", "billing", "invoice schedule", "payment schedule"]
+  doc_types: [rfp, addendum]
+
+delivery:
+  term: "delivery"
+  synonyms: ["delivery date", "delivery terms", "shipment", "installation", "implementation"]
+  doc_types: [rfp, addendum]
+
+penalties:
+  term: "penalties"
+  synonyms: ["liquidated damages", "default penalties", "non-performance penalties", "warranties"]
+  doc_types: [rfp, addendum]
+
+product:
+  term: "product"
+  synonyms: ["item", "goods", "services", "offering", "solution"]
+  doc_types: [spec]
+
+spec_concept:
+  term: "specification"
+  synonyms: ["specs", "technical requirements", "requirements", "criteria", "parameters"]
+  doc_types: [spec]
+
+affidavit_concept:
+  term: "affidavit"
+  synonyms: ["sworn statement", "declaration", "certification", "attestation"]
+  doc_types: [affidavit]
+
+signatory:
+  term: "signatory"
+  synonyms: ["signer", "author", "claimant", "affiant"]
+  doc_types: [affidavit]
+
+bids_in_scope:
+  term: "bids in scope"
+  synonyms: ["active bids", "bids under consideration", "qualified bids", "bids received"]
+  doc_types: [rfp]
+
+addendum_number:
+  term: "addendum number"
+  synonyms: ["addenda", "amendment", "supplement", "update no.", "change no."]
+  doc_types: [addendum]
+
+rfp_keywords:
+  term: "RFP keywords"
+  synonyms: ["request for proposal", "invitation to bid", "ITB", "RFP response", "proposal requirements"]
+  doc_types: [rfp]
+
+currency_terms:
+  term: "currency"
+  synonyms: ["dollars", "$", "USD", "price", "cost", "financial"]
+  doc_types: [rfp, addendum]
+
+date_terms:
+  term: "date"
+  synonyms: ["dated", "date of", "effective date", "expiration", "timeframe"]
+  doc_types: [rfp, addendum, spec, affidavit]
+
+legal_terms:
+  term: "legal"
+  synonyms: ["legal", "jurisdiction", "governing law", "compliance", "regulatory"]
+  doc_types: [rfp, addendum, spec]
+
+performance_terms:
+  term: "performance"
+  synonyms: ["KPIs", "metrics", "SLA", "service level", "deliverables", " milestones"]
+  doc_types: [rfp, addendum]
