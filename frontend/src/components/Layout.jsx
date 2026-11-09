@@ -13,17 +13,16 @@ import {
 import './Layout.css';
 
 const navItems = [
-  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/ingest', label: 'Ingest', icon: Upload },
-  { path: '/search', label: 'Search', icon: Search },
-  { path: '/ask', label: 'Ask', icon: HelpCircle },
-  { path: '/documents', label: 'Documents', icon: FileText },
-  { path: '/extraction', label: 'Extraction', icon: Database },
+  { path: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { path: 'ingest', label: 'Ingest', icon: Upload },
+  { path: 'search', label: 'Search', icon: Search },
+  { path: 'ask', label: 'Ask', icon: HelpCircle },
+  { path: 'documents', label: 'Documents', icon: FileText },
+  { path: 'extraction', label: 'Extraction', icon: Database },
 ];
 
 export default function Layout() {
   const [collapsed, setCollapsed] = React.useState(false);
-  const location = useLocation();
 
   return (
     <div className="layout">
@@ -40,13 +39,12 @@ export default function Layout() {
         </div>
         <nav className="sidebar-nav">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
             const Icon = item.icon;
             return (
               <NavLink
                 key={item.path}
                 to={item.path}
-                className={`nav-item ${isActive ? 'active' : ''}`}
+                className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
                 title={collapsed ? item.label : ''}
               >
                 <Icon size={20} />

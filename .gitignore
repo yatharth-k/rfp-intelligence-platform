@@ -25,6 +25,7 @@ outputs/traces/
 # IDE specific
 .vscode/
 .idea/
+.claude/
 
 # Distribution
 dist/
