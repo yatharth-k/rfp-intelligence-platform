@@ -7,9 +7,9 @@ A comprehensive platform for ingesting, indexing, searching, and extracting inte
 - [Architecture](#architecture)
 - [Quick Start](#quick-start)
 - [Installation](#installation)
+- [Frontend (Web UI)](#frontend-web-ui)
 - [Running the Pipeline](#running-the-pipeline)
 - [API Endpoints](#api-endpoints)
-- [Frontend (Web UI)](#frontend-web-ui)
 - [Design Decisions](#design-decisions)
 - [Known Limitations and Assumptions](#known-limitations-and-assumptions)
 - [Deliverables](#deliverables)
@@ -141,6 +141,25 @@ Key dependencies:
 
 ## Running the Pipeline
 
+## Frontend (Web UI)
+
+The React frontend provides:
+- **Dashboard** - Overview of bids and indexing status
+- **Ingest** - Upload and index documents
+- **Search** - Search across documents with mode selection
+- **Ask** - Natural language Q&A with citations
+- **Documents** - Browse indexed documents and chunks
+- **Extraction** - View extracted fields and validation
+
+```bash
+cd frontend
+npm run dev      # Development server at http://localhost:3000
+npm run build    # Production build
+npm run preview  # Preview production build
+```
+
+The frontend proxies API calls to `http://localhost:8000` via Vite proxy.
+
 ### 1. Ingest Documents
 ```bash
 # Via CLI
@@ -219,25 +238,6 @@ python main.py qa_log
 - `dense` - Semantic-only search (vector)
 - `hybrid` - BM25 + Vector with RRF fusion
 - `hybrid_rerank` - Hybrid + cross-encoder reranking (recommended)
-
-## Frontend (Web UI)
-
-The React frontend provides:
-- **Dashboard** - Overview of bids and indexing status
-- **Ingest** - Upload and index documents
-- **Search** - Search across documents with mode selection
-- **Ask** - Natural language Q&A with citations
-- **Documents** - Browse indexed documents and chunks
-- **Extraction** - View extracted fields and validation
-
-```bash
-cd frontend
-npm run dev      # Development server at http://localhost:3000
-npm run build    # Production build
-npm run preview  # Preview production build
-```
-
-The frontend proxies API calls to `http://localhost:8000` via Vite proxy.
 
 ## Design Decisions
 
