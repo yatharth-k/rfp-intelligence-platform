@@ -16,10 +16,10 @@ import { Input, Select, Textarea } from '../components/Input';
 import { askQuestion, listBids } from '../api';
 
 const SEARCH_MODES = [
-  { value: 'fusion', label: 'Fusion (BM25 + Vector)' },
-  { value: 'bm25', label: 'BM25 (Keyword)' },
-  { value: 'vector', label: 'Vector (Semantic)' },
-  { value: 'rerank', label: 'Rerank (Cross-encoder)' },
+  { value: 'dense', label: 'Semantic' },
+  { value: 'bm25', label: 'Keyword' },
+  { value: 'hybrid', label: 'Hybrid' },
+  { value: 'hybrid_rerank', label: 'Hybrid + Rerank' },
 ];
 
 const SUGGESTED_QUESTIONS = [
@@ -38,7 +38,7 @@ export default function Ask() {
 
   const [bidId, setBidId] = useState(searchParams.get('bid') || '');
   const [question, setQuestion] = useState('');
-  const [mode, setMode] = useState(searchParams.get('mode') || 'fusion');
+  const [mode, setMode] = useState(searchParams.get('mode') || 'hybrid_rerank');
   const [topK, setTopK] = useState(parseInt(searchParams.get('top_k')) || 5);
 
   const [bids, setBids] = useState([]);

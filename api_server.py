@@ -266,8 +266,14 @@ async def search_documents(request: SearchRequest):
             embedding_client=embedding_client,
         )
 
+        # Support both design mode names (dense, bm25, hybrid, hybrid_rerank)
+        # and legacy mode names (vector, bm25, fusion, rerank)
         mode_map = {
+            "dense": SearchMode.VECTOR,
             "bm25": SearchMode.BM25,
+            "hybrid": SearchMode.FUSION,
+            "hybrid_rerank": SearchMode.RERANK,
+            # Legacy aliases
             "vector": SearchMode.VECTOR,
             "fusion": SearchMode.FUSION,
             "rerank": SearchMode.RERANK,

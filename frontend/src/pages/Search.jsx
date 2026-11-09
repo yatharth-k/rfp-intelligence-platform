@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Search as SearchIcon,
   Filter,
@@ -16,21 +16,20 @@ import { Input, Select } from '../components/Input';
 import { searchDocuments, listBids } from '../api';
 
 const SEARCH_MODES = [
-  { value: 'fusion', label: 'Fusion (BM25 + Vector)' },
-  { value: 'bm25', label: 'BM25 (Keyword)' },
-  { value: 'vector', label: 'Vector (Semantic)' },
-  { value: 'rerank', label: 'Rerank (Cross-encoder)' },
+  { value: 'dense', label: 'Semantic' },
+  { value: 'bm25', label: 'Keyword' },
+  { value: 'hybrid', label: 'Hybrid' },
+  { value: 'hybrid_rerank', label: 'Hybrid + Rerank' },
 ];
 
 export default function Search() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
 
   const [query, setQuery] = useState(searchParams.get('q') || '');
   const [selectedBids, setSelectedBids] = useState(
     searchParams.get('bid') ? [searchParams.get('bid')] : []
   );
-  const [mode, setMode] = useState(searchParams.get('mode') || 'fusion');
+  const [mode, setMode] = useState(searchParams.get('mode') || 'hybrid_rerank');
   const [topK, setTopK] = useState(parseInt(searchParams.get('top_k')) || 10);
 
   const [bids, setBids] = useState([]);
@@ -40,6 +39,9 @@ export default function Search() {
   const [totalCount, setTotalCount] = useState(0);
   const [degraded, setDegraded] = useState(false);
 
+  const abortControllerRef = useRef(null);
+  const requestIdRef = useRef(0);
+
   useEffect(() => {
     let mounted = true;
     listBids().then(res => {
@@ -48,46 +50,53 @@ export default function Search() {
     return () => { mounted = false; };
   }, []);
 
-  useEffect(() => {
-    let mounted = true;
-
-    if (query.trim()) {
-      performSearch();
-    } else {
-      if (mounted) {
-        setResults([]);
-        setTotalCount(0);
-      }
-    }
-
-    return () => { mounted = false; };
-  }, [query, selectedBids, mode, topK]);
-
-  const performSearch = async () => {
+  const performSearch = useCallback(async () => {
     if (!query.trim()) return;
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    const thisRequestId = ++requestIdRef.current;
 
     setLoading(true);
     setError(null);
 
     try {
-      // If no bids selected, search across all bids (pass empty array to omit filter)
       const bidIds = selectedBids.length > 0 ? selectedBids : undefined;
-      const res = await searchDocuments(query, bidIds, topK, mode);
-      // Only update state if component is still mounted
+      const res = await searchDocuments(query, bidIds, topK, mode, controller.signal);
+
+      if (controller.signal.aborted) return;
+      if (thisRequestId !== requestIdRef.current) return;
+
       setResults(res.data.results || []);
       setTotalCount(res.data.total_count || 0);
       setDegraded(res.data.degraded || false);
     } catch (err) {
+      if (err.name === 'AbortError' || err.code === 'ERR_CANCELED') return;
+      if (thisRequestId !== requestIdRef.current) return;
       setError(err.message);
       setResults([]);
     } finally {
-      setLoading(false);
+      if (thisRequestId === requestIdRef.current) {
+        setLoading(false);
+      }
     }
-  };
+  }, [query, selectedBids, mode, topK]);
+
+  useEffect(() => {
+    if (query.trim()) {
+      performSearch();
+    } else {
+      setResults([]);
+      setTotalCount(0);
+    }
+  }, [performSearch]);
 
   const handleSearch = (e) => {
     e.preventDefault();
-    // Update URL params
     const params = new URLSearchParams();
     if (query) params.set('q', query);
     if (selectedBids.length > 0) params.set('bid', selectedBids[0]);
@@ -117,7 +126,7 @@ export default function Search() {
                 onChange={(e) => setQuery(e.target.value)}
                 className="search-input"
               />
-              <Button type="submit" variant="primary" size="lg" loading={loading}>
+              <Button type="submit" variant="primary" size="lg" loading={loading} disabled={loading || !query.trim()}>
                 <Search size={20} />
               </Button>
             </div>
@@ -152,6 +161,7 @@ export default function Search() {
                   value={mode}
                   onChange={(e) => setMode(e.target.value)}
                   options={SEARCH_MODES}
+                  disabled={loading}
                 />
               </div>
 
@@ -163,6 +173,7 @@ export default function Search() {
                   onChange={(e) => setTopK(Math.max(1, Math.min(50, parseInt(e.target.value) || 10)))}
                   min={1}
                   max={50}
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -173,6 +184,7 @@ export default function Search() {
       {error && (
         <div className="alert alert-error">
           <span>{error}</span>
+          <Button variant="ghost" size="sm" onClick={performSearch}>Retry</Button>
         </div>
       )}
 
@@ -181,7 +193,7 @@ export default function Search() {
           {loading && <Loader2 size={16} className="spin" />}
           {degraded && (
             <>
-              <span>Search running in degraded mode (BM25 only)</span>
+              <span>Search running in degraded mode</span>
             </>
           )}
           {loading && <span>Searching...</span>}

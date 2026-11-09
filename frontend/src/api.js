@@ -26,8 +26,8 @@ export const indexDocuments = (bidId, force = false) =>
   api.post('/index', { bid_id: bidId, force });
 
 // Search
-export const searchDocuments = (query, bidIds, topK = 5, mode = 'fusion') =>
-  api.post('/search', { query, bid_ids: bidIds || [], top_k: topK, mode });
+export const searchDocuments = (query, bidIds, topK = 5, mode = 'hybrid_rerank', signal) =>
+  api.post('/search', { query, bid_ids: bidIds || [], top_k: topK, mode }, { signal });
 
 // Ask
 export const askQuestion = (bidId, question, topK = 5, mode = 'fusion') =>
