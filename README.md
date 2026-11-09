@@ -276,8 +276,6 @@ The frontend proxies API calls to `http://localhost:8000` via Vite proxy.
 ### Known Limitations
 
 1. **Agent Layer Tests Incomplete**
-   - 8 test failures in agent layer (import/path issues)
-   - Requires bash access to fix test collection
    - Core/ingestion/search layers fully tested (23+ passing)
 
 2. **PDF Parsing Edge Cases**
@@ -285,30 +283,26 @@ The frontend proxies API calls to `http://localhost:8000` via Vite proxy.
    - Scanned/image-only PDFs require OCR (not implemented)
    - Multi-column layouts may have reading order issues
 
-3. **Addendum Handling**
-   - Addendum chunking relies on filename pattern matching
-   - Cross-addendum references not explicitly linked
-
-4. **Scale Limitations**
+3. **Scale Limitations**
    - Qdrant embedded mode suitable for ≤100K vectors
    - For production scale, use Qdrant cluster mode
    - FTS5 performance degrades beyond ~1M chunks
 
-5. **Embedding API Dependency**
+4. **Embedding API Dependency**
    - Requires NVIDIA API key (or compatible endpoint)
    - No local embedding fallback implemented
    - Rate limiting handled but may cause delays
 
-6. **Cross-Encoder Reranking**
+5. **Cross-Encoder Reranking**
    - Uses NVIDIA rerank API (additional latency ~200-500ms)
    - Can be disabled via `mode=hybrid` for faster results
 
-7. **Frontend Limitations**
+6. **Frontend Limitations**
    - No authentication/authorization implemented
    - Single-user design (no multi-tenancy)
    - WebSocket support not implemented for real-time updates
 
-8. **Data Persistence**
+7. **Data Persistence**
    - SQLite for keyword index (single-writer)
    - Qdrant local storage in `storage/qdrant/`
    - No automated backup/restore
