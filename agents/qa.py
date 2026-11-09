@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Service 18: Q&A Agent and Report Agent.
 
 Two responsibilities sharing one output layer:
@@ -10,10 +12,9 @@ Follows service 18 design: search engine and retrieval agent as tools, LLM
 gateway with Pydantic schemas, state from the orchestrator.
 """
 
-from __future__ import annotations
-
 import json
 import logging
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
 from agents.state import BidState, QAAnswer, FinalBidRecord
@@ -54,6 +55,9 @@ def classify_question(question: str, state: BidState) -> Tuple[QuestionType, dic
 
     # Check for explicit bid references
     bid_ids = state.get("bids_in_scope", [])
+    # Fallback to single bid_id if bids_in_scope is empty
+    if not bid_ids and state.get("bid_id"):
+        bid_ids = [{"bid_id": state["bid_id"]}]
     resolved_bids: dict = {"bids": [], "ambiguity": None}
 
     # Check for "both", "all", "each"
@@ -77,9 +81,13 @@ def classify_question(question: str, state: BidState) -> Tuple[QuestionType, dic
             resolved_bids["bids"] = [bid_ids[0].get("bid_id", "")]
         return QuestionType.MULTI_BID_COMPARE, resolved_bids
 
-    # Check for list queries ("which", "what", list of items)
-    list_keywords = ["which", "what", "list", "items", "affidavits", "forms"]
-    if any(word in question_lower for word in list_keywords):
+    # Check for list queries ("which", "what [plural]", "list", "items")
+    list_keywords = ["which", "list", "items", "affidavits", "forms"]
+    # "what" is only a list query if followed by plural/collective (e.g., "what are", "what items", "what forms")
+    is_what_list = question_lower.startswith("what are") or question_lower.startswith("what items") or \
+                   question_lower.startswith("what forms") or question_lower.startswith("what documents") or \
+                   question_lower.startswith("what affidavits") or question_lower.startswith("what requirements")
+    if any(word in question_lower for word in list_keywords) or is_what_list:
         return QuestionType.LIST_QUERY, {"bids": [bid.get("bid_id", "") for bid in bid_ids if bid.get("bid_id")]}
 
     # Default: single fact question
@@ -151,7 +159,7 @@ async def answer_question(
                 addendum_numbers=[],
                 top_k=QA_TOP_K,
             )
-            result = await retrieve(req, state, search_engine)
+            result = await retrieve(req, state, search_engine, query_rewriter)
             retrieval_results[bid_id] = result
         except Exception as e:
             logger.error(f"Retrieval failed for bid {bid_id}: {e}")
@@ -205,7 +213,7 @@ def _answer_from_evidence(
     question_type: QuestionType,
     retrieval_results: dict[str, any],
     state: BidState,
-) -> Tuple[str, list, float, bool]:
+) -> tuple[str, list, float, bool]:
     """Answer the question from retrieved evidence.
 
     Returns: (answer, citations, confidence, not_found)
@@ -236,32 +244,59 @@ def _answer_from_evidence(
     return _answer_general(question, all_evidence)
 
 
-def _answer_single_fact(question: str, evidence: list) -> Tuple[str, list, float, bool]:
+# Stop words for answer matching (same as FTS5 query builder)
+ANSWER_STOP_WORDS = {
+    "what", "when", "where", "who", "why", "how", "which",
+    "the", "a", "an", "and", "or", "but", "if", "then", "else",
+    "in", "on", "at", "to", "for", "of", "with", "by", "from",
+    "is", "are", "was", "were", "be", "been", "being", "have", "has", "had",
+    "do", "does", "did", "will", "would", "could", "should", "may", "might",
+    "this", "that", "these", "those", "it", "its", "they", "them", "their",
+    "you", "your", "we", "our", "us", "i", "me", "my", "mine",
+    "changed", "change", "changes", "change",
+}
+
+
+def _answer_single_fact(question: str, evidence: list) -> tuple[str, list, float, bool]:
     """Answer a single fact question from evidence.
 
     Looks for evidence that directly answers the question.
     """
     question_lower = question.lower()
 
-    # Simple keyword matching
+    # Simple keyword matching (filter stop words)
     for ev in evidence:
         ev_text = (ev.get("text") or "").lower()
         ev_file = ev.get("file_name", "")
         ev_page = ev.get("page", 0)
 
         # Check if key terms from the question appear in the evidence
-        # This is a simplified check
-        key_terms = [t for t in question_lower.split() if len(t) > 3]
+        # Filter out stop words
+        key_terms = [t for t in question_lower.split() if len(t) > 3 and t not in ANSWER_STOP_WORDS]
         if any(term in ev_text for term in key_terms):
             # Found relevant evidence
-            citation = type("obj", (object,), {
+            citation = {
                 "file_name": ev_file,
-                "page": ev_page,
-            })()
+                "page": max(ev_page, 1),  # Citation requires page >= 1
+                "text": ev.get("text", "")[:200],
+            }
             answer = f"{ev.get('text', '')[:200]}..."
             return answer, [citation], 0.7, False
 
-    # No direct match found
+    # No direct match found - fallback to top-ranked evidence
+    if evidence:
+        ev = evidence[0]
+        ev_file = ev.get("file_name", "")
+        ev_page = ev.get("page", 0)
+        citation = {
+            "file_name": ev_file,
+            "page": max(ev_page, 1),
+            "text": ev.get("text", "")[:200],
+        }
+        answer = f"{ev.get('text', '')[:200]}..."
+        return answer, [citation], 0.5, False
+
+    # No evidence at all
     return "Not found in documents", [], 0.0, True
 
 
@@ -288,16 +323,17 @@ def _answer_list_query(evidence: list) -> Tuple[str, list, float, bool]:
         # Create citations
         citations = []
         for i, ev in enumerate(evidence[:3]):  # Top 3 sources
-            citations.append(type("obj", (object,), {
+            citations.append({
                 "file_name": ev.get("file_name", ""),
-                "page": ev.get("page", 0),
-            })())
+                "page": max(ev.get("page", 0), 1),
+                "text": ev.get("text", "")[:200],
+            })
         return answer, citations, 0.6, False
     else:
         return "Not found in documents", [], 0.0, True
 
 
-def _answer_general(question: str, evidence: list) -> Tuple[str, list, float, bool]:
+def _answer_general(question: str, evidence: list) -> tuple[str, list, float, bool]:
     """General answer from evidence.
 
     Falls back to a simple summary of the evidence.
@@ -312,10 +348,11 @@ def _answer_general(question: str, evidence: list) -> Tuple[str, list, float, bo
         # Take first sentence-ish portion
         sentences = text.split(". ")
         summary = ". ".join(sentences[:2]) + "."
-        citation = type("obj", (object,), {
+        citation = {
             "file_name": first_ev.get("file_name", ""),
-            "page": first_ev.get("page", 0),
-        })
+            "page": max(first_ev.get("page", 0), 1),
+            "text": text[:200],
+        }
         return summary, [citation], 0.5, False
     else:
         return "Not found in documents", [], 0.0, True

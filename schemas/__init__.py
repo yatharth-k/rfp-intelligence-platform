@@ -353,3 +353,43 @@ class IngestionReport(BaseModel):
     warnings: List[str] = Field(
         default_factory=list, description="Warnings from the ingestion process"
     )
+
+
+# ============================================================
+# Field extraction schemas (used by agents)
+# ============================================================
+
+
+class SourceRef(BaseModel):
+    """A reference to a source chunk used as evidence."""
+    chunk_id: str = Field(..., description="ID of the source chunk")
+    file_name: str = Field(..., description="Source file name")
+    page_start: int = Field(..., ge=1, description="Starting page number")
+    page_end: int = Field(..., ge=1, description="Ending page number")
+    text: str = Field(..., description="Source text excerpt")
+    score: float = Field(..., ge=0.0, le=1.0, description="Relevance score")
+
+
+class FieldResult(BaseModel):
+    """Result of extracting a single field."""
+    field_name: str = Field(..., description="Name of the field")
+    value: Any = Field(None, description="Extracted value")
+    value_type: Literal["date", "currency", "percentage", "text", "yes_no", "multi"] = Field(
+        "text", description="Type of the extracted value"
+    )
+    status: Literal["found", "not_found", "partial", "failed"] = Field(
+        "not_found", description="Extraction status"
+    )
+    confidence: float = Field(0.0, ge=0.0, le=1.0, description="Confidence in extraction")
+    evidence: List[SourceRef] = Field(
+        default_factory=list, description="Supporting evidence chunks"
+    )
+    notes: Optional[str] = Field(
+        None, description="Additional notes about the extraction"
+    )
+    validation_passed: Optional[bool] = Field(
+        None, description="Whether validation passed"
+    )
+    validation_notes: Optional[str] = Field(
+        None, description="Notes from validation"
+    )

@@ -9,6 +9,7 @@ full rebuilds.
 from __future__ import annotations
 
 import json
+import logging
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -19,6 +20,8 @@ from core.limiter import RateLimiter, DiskCache, ProviderContext
 from core.tracing import Tracer
 from search.keyword_store import KeywordStore, FileRegistry
 from search.vector_store import QdrantVectorStore
+
+logger = logging.getLogger(__name__)
 
 
 class Indexer:
@@ -179,6 +182,7 @@ class Indexer:
         bid_id: str,
         *,
         embed_model: str = "nv-embed-v1",
+        force: bool = False,
     ) -> Dict[str, Any]:
         """Index a list of ParsedDocument objects.
 
@@ -194,8 +198,8 @@ class Indexer:
             files_indexed += 1
             file_hash = doc.file_hash
 
-            # Check registry
-            if self.file_registry.is_indexed(file_hash, embed_model):
+            # Check registry (skip if not forced and already indexed)
+            if not force and self.file_registry.is_indexed(file_hash, embed_model):
                 continue
 
             # Delete old chunks if file was previously indexed
@@ -321,12 +325,19 @@ class Indexer:
             # Add to keyword store
             self.keyword_store.add_chunk(chunk)
 
-        # Upsert to vector store
+        # Upsert to vector store - use actual embedding vectors
         chunks_with_vectors = []
-        for chunk in chunks:
-            if chunk.embed_text and len(chunk.embed_text) > 0:
-                # In a full implementation, would use the actual embedding
-                # For now, generate a dummy vector (should match the real dim)
+        for i, chunk in enumerate(chunks):
+            # Get the embedding vector from embedded_chunks
+            embedding_vector = None
+            if i < len(embedded_chunks):
+                embed_data = embedded_chunks[i]
+                embedding_vector = embed_data.get("embedding_vector")
+
+            if embedding_vector is not None and len(embedding_vector) > 0:
+                chunks_with_vectors.append((chunk, embedding_vector))
+            elif chunk.embed_text and len(chunk.embed_text) > 0:
+                # Fallback: should not happen in normal operation
                 import numpy as np
                 vector = np.random.randn(self.vector_store.dim).tolist()
                 chunks_with_vectors.append((chunk, vector))
@@ -341,52 +352,50 @@ class Indexer:
     ) -> List[Dict[str, Any]]:
         """Embed chunks using the embedding client with caching and rate limiting.
 
-        Returns list of dicts with 'embed_text' and 'cache_hit' keys.
+        Returns list of dicts with 'embed_text', 'embedding_vector', and 'cache_hit' keys.
+        Uses input_type="passage" for asymmetric embeddings.
         """
-        results = []
+        if not chunks:
+            return []
 
-        for chunk in chunks:
-            # Check cache first
-            cache_key = (
-                f"{embed_model}:{chunk.file_hash}:"
-                f"{hash(chunk.text) % (10**8)}"
-            )
-            # In a full implementation, would check the disk cache
-            # For now, call the embedding client
+        # Extract texts for batch embedding
+        texts = [chunk.text for chunk in chunks]
 
-            # Apply rate limiting
+        # Use embed_passages for passage embeddings (input_type="passage")
+        try:
+            # Apply rate limiting for batch
             self.rate_limiter.acquire()
+            embedding_vectors = self.embedding_client.embed_passages(texts)
 
-            try:
-                embedding_result = self.embedding_client.embed_query(chunk.text)
-                embedding_vector = embedding_result.embedding
-
-                # Store embed_text as a representation
-                # In practice, this would be the vector serialized or a text embedding
-                embed_text = (
-                    f"vector_{len(embedding_vector)}d"
-                    if embedding_vector
-                    else ""
-                )
-
-                results.append(
-                    {
-                        "embed_text": embed_text,
+            results = []
+            for i, vector in enumerate(embedding_vectors):
+                results.append({
+                    "embed_text": f"vector_{len(vector)}d",
+                    "cache_hit": False,
+                    "embedding_vector": vector.tolist() if hasattr(vector, 'tolist') else list(vector),
+                })
+            return results
+        except Exception as e:
+            logger.error(f"Batch embedding failed: {e}")
+            # Fallback: individual embedding with embed_query (less optimal)
+            results = []
+            for chunk in chunks:
+                try:
+                    self.rate_limiter.acquire()
+                    embedding_result = self.embedding_client.embed_query(chunk.text)
+                    embedding_vector = embedding_result.embedding
+                    results.append({
+                        "embed_text": f"vector_{len(embedding_vector)}d",
                         "cache_hit": False,
-                        "embedding_vector": embedding_vector,
-                    }
-                )
-            except Exception as e:
-                # Mark chunk as not embedded; remains searchable by BM25 only
-                results.append(
-                    {
+                        "embedding_vector": embedding_vector.tolist() if hasattr(embedding_vector, 'tolist') else list(embedding_vector),
+                    })
+                except Exception as e2:
+                    results.append({
                         "embed_text": "",
                         "cache_hit": False,
-                        "error": str(e),
-                    }
-                )
-
-        return results
+                        "error": str(e2),
+                    })
+            return results
 
     @staticmethod
     def _file_hash(data: bytes) -> str:
@@ -450,7 +459,7 @@ class Indexer:
         if self.file_registry._conn is None:
             self.file_registry._conn = sqlite3.connect(str(self.file_registry.db_path))
 
-        cursor = self._conn.execute(
+        cursor = self.file_registry._conn.execute(
             """SELECT bid_id, COUNT(DISTINCT file_hash) as n_files,
               SUM(n_chunks) as n_chunks, status
             FROM file_registry

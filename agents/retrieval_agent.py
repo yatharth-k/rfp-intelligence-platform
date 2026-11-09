@@ -66,13 +66,14 @@ class RetrievalResult:
         self.queries_used = queries_used
 
 
-async def retrieve(req: RetrievalRequest, state: BidState, search_engine: SearchEngine) -> RetrievalResult:
+async def retrieve(req: RetrievalRequest, state: BidState, search_engine: SearchEngine, query_rewriter=None) -> RetrievalResult:
     """Retrieve evidence for a single request.
 
     Args:
         req: RetrievalRequest with queries, filters, and preferences
         state: BidState containing run context
         search_engine: SearchEngine instance for executing searches
+        query_rewriter: Optional query rewriter for query expansion
 
     Returns:
         RetrievalResult with evidence, queries used, and degraded flags
@@ -101,7 +102,7 @@ async def retrieve(req: RetrievalRequest, state: BidState, search_engine: Search
                     filters=filters if filters else None,
                     mode=search_mode,
                     top_k=req.top_k,
-                    rewrite_query=False,
+                    rewrite_query=query_rewriter is not None,
                 )
 
                 queries_used.append(query)

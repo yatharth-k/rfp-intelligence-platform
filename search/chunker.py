@@ -76,9 +76,10 @@ def chunk_document(doc: "ParsedDocument", cfg: dict) -> List[Chunk]:
 
     chunks: List[Chunk] = []
 
-    # 1. Handle addendum-specific chunking first
-    addendum_chunks = _chunk_addendum(doc, min_tokens, max_tokens)
-    chunks.extend(addendum_chunks)
+    # 1. Handle addendum-specific chunking first (only for addendum documents)
+    if doc.doc_type == "addendum":
+        addendum_chunks = _chunk_addendum(doc, min_tokens, max_tokens)
+        chunks.extend(addendum_chunks)
 
     # 2. Chunk remaining prose and tables
     remaining_chunks = _chunk_prose_and_tables(doc, target_tokens, max_tokens, min_tokens, overlap_ratio, table_max_tokens)

@@ -27,8 +27,10 @@ try:
         PayloadSchemaType,
         FieldCondition,
         Range,
-        KeywordSchema,
-        TextSchema,
+        KeywordIndexParams,
+        IntegerIndexParams,
+        Filter,
+        MatchValue,
     )
     QDRANT_AVAILABLE = True
 except ImportError:
@@ -91,18 +93,33 @@ class QdrantVectorStore:
                         size=self.dim,
                         distance=Distance.COSINE,
                     ),
-                    payload_schema={
-                        "bid_id": KeywordSchema(),
-                        "doc_type": KeywordSchema(),
-                        "addendum_number": KeywordSchema(),
-                        "file_name": KeywordSchema(),
-                        "page_start": {"type": "integer"},
-                        "page_end": {"type": "integer"},
-                        "section": KeywordSchema(),
-                        "kind": KeywordSchema(),
-                    },
                 )
+                # Create payload indexes for filtering
+                self._create_payload_indexes()
             self._collection_initialized = True
+
+    def _create_payload_indexes(self) -> None:
+        """Create payload indexes for commonly filtered fields."""
+        index_fields = [
+            ("bid_id", PayloadSchemaType.KEYWORD),
+            ("doc_type", PayloadSchemaType.KEYWORD),
+            ("addendum_number", PayloadSchemaType.KEYWORD),
+            ("file_name", PayloadSchemaType.KEYWORD),
+            ("page_start", PayloadSchemaType.INTEGER),
+            ("page_end", PayloadSchemaType.INTEGER),
+            ("section", PayloadSchemaType.KEYWORD),
+            ("kind", PayloadSchemaType.KEYWORD),
+        ]
+        for field_name, field_schema in index_fields:
+            try:
+                self.client.create_payload_index(
+                    collection_name=self.collection_name,
+                    field_name=field_name,
+                    field_schema=field_schema,
+                )
+            except Exception as e:
+                # Index might already exist or field might not be used
+                pass
 
     def _point_id_from_chunk_id(self, chunk_id: str) -> str:
         """Derive a deterministic point ID from chunk_id for idempotent upserts."""
@@ -181,19 +198,19 @@ class QdrantVectorStore:
             conditions = []
             if filters.get("bid_id") is not None:
                 conditions.append(
-                    FieldCondition(key="bid_id", match={"value": filters["bid_id"]})
+                    FieldCondition(key="bid_id", match=MatchValue(value=filters["bid_id"]))
                 )
             if filters.get("doc_type") is not None:
                 conditions.append(
-                    FieldCondition(key="doc_type", match={"value": filters["doc_type"]})
+                    FieldCondition(key="doc_type", match=MatchValue(value=filters["doc_type"]))
                 )
             if filters.get("addendum_number") is not None:
                 conditions.append(
-                    FieldCondition(key="addendum_number", match={"value": filters["addendum_number"]})
+                    FieldCondition(key="addendum_number", match=MatchValue(value=str(filters["addendum_number"])))
                 )
             if filters.get("file_name") is not None:
                 conditions.append(
-                    FieldCondition(key="file_name", match={"value": filters["file_name"]})
+                    FieldCondition(key="file_name", match=MatchValue(value=filters["file_name"]))
                 )
             if filters.get("min_page_start") is not None:
                 conditions.append(
@@ -211,17 +228,18 @@ class QdrantVectorStore:
                         Range(key="page_end", lte=filters["max_page_end"])
                     )
             if conditions:
-                query_filter = {"must": conditions}
+                query_filter = Filter(must=conditions)
 
-        search_result = self.client.search(
+        search_result = self.client.query_points(
             collection_name=self.collection_name,
-            query_vector=query_vector,
+            query=query_vector,
             limit=limit,
             query_filter=query_filter,
+            with_payload=True,
         )
 
         results = []
-        for hit in search_result:
+        for hit in search_result.points:
             payload = hit.payload
             results.append({
                 "chunk_id": payload.get("chunk_id"),
@@ -249,30 +267,30 @@ class QdrantVectorStore:
         conditions = []
         if filter_dict.get("bid_id") is not None:
             conditions.append(
-                FieldCondition(key="bid_id", match={"value": filter_dict["bid_id"]})
+                FieldCondition(key="bid_id", match=MatchValue(value=filter_dict["bid_id"]))
             )
         if filter_dict.get("doc_type") is not None:
             conditions.append(
-                FieldCondition(key="doc_type", match={"value": filter_dict["doc_type"]})
+                FieldCondition(key="doc_type", match=MatchValue(value=filter_dict["doc_type"]))
             )
         if filter_dict.get("addendum_number") is not None:
             conditions.append(
-                FieldCondition(key="addendum_number", match={"value": filter_dict["addendum_number"]})
+                FieldCondition(key="addendum_number", match=MatchValue(value=str(filter_dict["addendum_number"])))
             )
         if filter_dict.get("file_name") is not None:
             conditions.append(
-                FieldCondition(key="file_name", match={"value": filter_dict["file_name"]})
+                FieldCondition(key="file_name", match=MatchValue(value=filter_dict["file_name"]))
             )
 
         if not conditions:
             return 0
 
-        filter_payload = {"must": conditions}
+        query_filter = Filter(must=conditions)
 
         # Delete by filter
         result = self.client.delete(
             collection_name=self.collection_name,
-            points_selector=filter_payload,
+            points_selector=query_filter,
         )
 
         # Qdrant delete returns the count of deleted points
@@ -304,10 +322,6 @@ class QdrantVectorStore:
             "dim": col_info.config.params.vectors.size,
             "distance": col_info.config.params.vectors.distance.name,
             "point_count": col_info.points_count,
-            "payload_schema": {
-                key: value for key, value in col_info.config.payload_schema.__dict__.items()
-                if not key.startswith("_")
-            },
         }
 
     def close(self) -> None:

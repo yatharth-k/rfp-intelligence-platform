@@ -234,24 +234,36 @@ class KeywordStore:
     def _normalize_fts_query(query: str) -> str:
         """Normalize a query for FTS5 search.
 
-        Prevents periods/slashes from being attached to tokens:
-        - Replace trailing periods (followed by whitespace or end-of-string) with a space
-        - Replace trailing slashes (followed by whitespace or end-of-string) with a space
-        This ensures searching for "30" matches indexed text "30." or "30/"
+        Prevents punctuation from being attached to tokens:
+        - Replace trailing periods, slashes, question marks, commas (followed by whitespace or end-of-string) with a space
+        This ensures searching for "30" matches indexed text "30." or "30/" or "30?"
         """
-        # Replace trailing period or slash followed by whitespace or end-of-string with a space
-        normalized = re.sub(r'[./](?=\s|$)', ' ', query)
+        # Replace trailing punctuation followed by whitespace or end-of-string with a space
+        normalized = re.sub(r'[./?,](?=\s|$)', ' ', query)
         # Also normalize: collapse multiple spaces
-        normalized = re.sub(r'\\s+', ' ', normalized).strip()
+        normalized = re.sub(r'\s+', ' ', normalized).strip()
         return normalized
+
+    # Stop words to filter out from queries (common words that don't add search value)
+    STOP_WORDS = {
+        "what", "when", "where", "who", "why", "how", "which",
+        "the", "a", "an", "and", "or", "but", "if", "then", "else",
+        "in", "on", "at", "to", "for", "of", "with", "by", "from",
+        "is", "are", "was", "were", "be", "been", "being", "have", "has", "had",
+        "do", "does", "did", "will", "would", "could", "should", "may", "might",
+        "this", "that", "these", "those", "it", "its", "they", "them", "their",
+        "you", "your", "we", "our", "us", "i", "me", "my", "mine",
+        "changed", "change", "changes", "change",  # domain-specific stop words
+    }
 
     def _build_fts_query(self, query: str) -> str:
         """Build a safe FTS5 query expression from user input.
 
         Converts user text to a safe FTS5 expression by:
         - Normalizing the query first (see _normalize_fts_query)
-        - Quoting each term
-        - OR-ing terms together
+        - Detecting quoted phrases and common multi-word patterns
+        - Using phrase queries for multi-word terms (better precision)
+        - Filtering stop words
         - Escaping special FTS5 characters
         """
         # Normalize query first
@@ -263,19 +275,55 @@ class KeywordStore:
             return "*"
 
         # Split into terms, handling quoted phrases
+        # Preserve quoted phrases as single terms
         terms = re.findall(r'"[^"]*"|[^\s]+', query)
 
-        # Build the expression: each term quoted, then OR'd
+        # Build the expression: use phrase queries for multi-word terms
         clauses = []
         for term in terms:
-            # Escape FTS5 special characters: " " (double quote) and \
-            escaped = term.replace('\\', '\\\\').replace('"', '""')
-            # Wrap in quotes for FTS5 term query
-            clauses.append(f'"{escaped}"')
+            # If term is already quoted, it's a phrase - keep as is (but escape)
+            if term.startswith('"') and term.endswith('"') and len(term) > 1:
+                escaped = term[1:-1].replace('\\', '\\\\').replace('"', '""')
+                clauses.append(f'"{escaped}"')
+            else:
+                # Single word term - quote it
+                escaped = term.replace('\\', '\\\\').replace('"', '""')
+                clauses.append(f'"{escaped}"')
 
-        if len(clauses) == 1:
-            return clauses[0]
-        return " OR ".join(clauses)
+        # Check for common multi-word patterns that should be phrases
+        # Pattern: "Addendum" + number
+        phrase_clauses = []
+        i = 0
+        while i < len(clauses):
+            # Remove quotes for checking
+            term = clauses[i].strip('"')
+            # Filter out stop words
+            if term.lower() in self.STOP_WORDS:
+                i += 1
+                continue
+            if i + 1 < len(clauses):
+                next_term = clauses[i + 1].strip('"')
+                # Check for "Addendum" followed by a number
+                if term.lower() == "addendum" and re.match(r'^\d+$', next_term):
+                    # Combine as a phrase query
+                    phrase_clauses.append(f'"addendum {next_term}"')
+                    i += 2
+                    continue
+                # Check for "Addendum" followed by "No" followed by number
+                if term.lower() == "addendum" and next_term.lower() == "no" and i + 2 < len(clauses):
+                    next_next = clauses[i + 2].strip('"')
+                    if re.match(r'^\d+$', next_next):
+                        phrase_clauses.append(f'"addendum no {next_next}"')
+                        i += 3
+                        continue
+            phrase_clauses.append(clauses[i])
+            i += 1
+
+        if len(phrase_clauses) == 0:
+            return "*"
+        if len(phrase_clauses) == 1:
+            return phrase_clauses[0]
+        return " OR ".join(phrase_clauses)
 
     def delete_by_file_hash(self, file_hash: str) -> int:
         """Delete all chunks associated with a file hash. Returns number of chunks deleted."""

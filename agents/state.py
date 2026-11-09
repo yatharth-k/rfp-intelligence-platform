@@ -11,9 +11,10 @@ import json
 import os
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Any, Dict, List, Literal, Optional, TypedDict
 
-from schemas import Chunk, DocType, FieldResult, SourceRef
+from schemas import Chunk, DocType, Evidence, FieldResult, SourceRef
+from pydantic import BaseModel, Field
 
 
 def merge_dicts(
@@ -146,3 +147,77 @@ def add_degraded(state: BidState, component: str) -> BidState:
         degraded.append(component)
     state["degraded"] = degraded
     return state
+
+
+# ============================================================
+# QA and Final Record schemas
+# ============================================================
+
+
+class Citation(BaseModel):
+    """A citation referencing a source document."""
+    file_name: str = Field(..., description="Source file name")
+    page: int = Field(..., ge=1, description="Page number")
+    text: Optional[str] = Field(None, description="Excerpt from the source")
+
+
+class QAAnswer(BaseModel):
+    """Answer to a free-form question with citations."""
+    question: str = Field(..., description="The original question")
+    answer: str = Field(..., description="The answer text")
+    citations: List[Citation] = Field(
+        default_factory=list, description="Supporting citations"
+    )
+    per_bid: Optional[Dict[str, str]] = Field(
+        None, description="Per-bid answers for comparison questions"
+    )
+    confidence: float = Field(
+        ..., ge=0.0, le=1.0, description="Confidence in the answer"
+    )
+    not_found: bool = Field(
+        False, description="Whether the answer was not found in documents"
+    )
+    notes: List[str] = Field(
+        default_factory=list, description="Additional notes"
+    )
+    plan: Dict[str, Any] = Field(
+        default_factory=dict, description="Execution plan/sub-queries used"
+    )
+
+
+class FinalBidRecord(BaseModel):
+    """Final per-bid record with all extracted data, validation, and summary."""
+    bid_id: str = Field(..., description="Bid identifier")
+    fields: Dict[str, Dict[str, Any]] = Field(
+        ..., description="Extracted fields with values, sources, confidence, status"
+    )
+    addendum_changes: List[Dict[str, Any]] = Field(
+        default_factory=list, description="Detected addendum changes"
+    )
+    validation: Dict[str, int] = Field(
+        ..., description="Validation summary: passed, failed, not_found counts"
+    )
+    summary_text: str = Field(..., description="3-6 sentence bid summary")
+    run: Dict[str, Any] = Field(
+        ..., description="Run metadata: models, timestamps, degraded components, warnings"
+    )
+
+
+# ============================================================
+# Extraction schemas
+# ============================================================
+
+
+class FieldExtraction(BaseModel):
+    """Single field extraction result from LLM."""
+    name: str = Field(..., description="Field name")
+    status: Literal["found", "not_found", "explicit_negative"] = Field(
+        "not_found", description="Extraction status"
+    )
+    value: Optional[Any] = Field(None, description="Extracted value")
+    evidence_ids: List[str] = Field(
+        default_factory=list, description="Evidence IDs supporting this value"
+    )
+    quote: Optional[str] = Field(None, description="Verbatim quote from evidence")
+    confidence: float = Field(..., ge=0.0, le=1.0, description="Confidence 0-1")
+    note: Optional[str] = Field(None, description="Reasoning note")
