@@ -1,0 +1,159 @@
+{
+  "bid_id": "Bid1",
+  "extraction_timestamp": "2026-11-09T00:00:00Z",
+  "status": "completed",
+  "fields": {
+    "due_date": {
+      "value": "July 9, 2024 at 2:00 PM CST",
+      "confidence": 0.85,
+      "sources": [
+        {
+          "chunk_id": "addendum2_chunk_1",
+          "file_name": "Addendum 2 RFP JA-207652 Student and Staff Computing Devices.pdf",
+          "page": 1,
+          "quote": "The new due date for this RFP will be July 9, 2024 at 2:00 PM CST."
+        }
+      ],
+      "status": "found",
+      "notes": "Found in Addendum 2 which extends the original deadline"
+    },
+    "contract_price": {
+      "value": "Not disclosed in available documents",
+      "confidence": 0.3,
+      "sources": [],
+      "status": "not_found",
+      "notes": "Pricing information not found in RFP or addenda; typically submitted in vendor proposal"
+    },
+    "contract_term": {
+      "value": "Quantities spread over life of contract",
+      "confidence": 0.75,
+      "sources": [
+        {
+          "chunk_id": "addendum1_chunk_21",
+          "file_name": "Addendum 1 RFP JA-207652 Student and Staff Computing Devices.pdf",
+          "page": 1,
+          "quote": "The quantities will be spread over life of the contract."
+        }
+      ],
+      "status": "found",
+      "notes": "Contract duration implied by quantity spread; exact term not specified"
+    },
+    "scope_of_work": {
+      "value": "Student and Staff Computing Devices - laptops, tablets, monitors, and related hardware for Dallas ISD",
+      "confidence": 0.9,
+      "sources": [
+        {
+          "chunk_id": "rfp_chunk_1",
+          "file_name": "JA-207652 Student and Staff Computing Devices FINAL.pdf",
+          "page": 1,
+          "quote": "Request For Proposal 168884 JA-207652 Student and Staff Computing Devices"
+        }
+      ],
+      "status": "found",
+      "notes": "Full scope detailed in RFP sections; includes Dell laptops, Chromebooks, monitors, warranties"
+    },
+    "payment_terms": {
+      "value": "Not explicitly specified; standard district terms apply",
+      "confidence": 0.4,
+      "sources": [
+        {
+          "chunk_id": "addendum1_chunk_39",
+          "file_name": "Addendum 1 RFP JA-207652 Student and Staff Computing Devices.pdf",
+          "page": 1,
+          "quote": "Will DISD Negotiate the legal terms and conditions after the award of this bid has been made? Answer: If deviations/exceptions to the terms and conditions are submitted, the District will respectfully request the removal of said deviations/exceptions."
+        }
+      ],
+      "status": "partial",
+      "notes": "Terms and conditions negotiable post-award; standard payment terms not detailed in RFP"
+    },
+    "delivery_date": {
+      "value": "Deployment schedule TBD; awarded vendor coordinates schedule",
+      "confidence": 0.65,
+      "sources": [
+        {
+          "chunk_id": "addendum1_chunk_34",
+          "file_name": "Addendum 1 RFP JA-207652 Student and Staff Computing Devices.pdf",
+          "page": 1,
+          "quote": "Any awarded vendor will need to coordinate a schedule for deployments."
+        }
+      ],
+      "status": "found",
+      "notes": "Delivery schedule coordinated with awarded vendor; no fixed dates in RFP"
+    },
+    "penalties": {
+      "value": "Not specified in available documents",
+      "confidence": 0.3,
+      "sources": [],
+      "status": "not_found",
+      "notes": "Penalty clauses not found in RFP or addenda"
+    },
+    "addendum_changes": {
+      "value": "Addendum 1: Vendor Q&A responses (USB specs, warranty terms, deployment, references, etc.). Addendum 2: Extended due date to July 9, 2024 at 2:00 PM CST.",
+      "confidence": 0.95,
+      "sources": [
+        {
+          "chunk_id": "addendum1_header",
+          "file_name": "Addendum 1 RFP JA-207652 Student and Staff Computing Devices.pdf",
+          "page": 1,
+          "quote": "The Purpose of this Addendum is to provide responses to the vendors' questions related to this RFP"
+        },
+        {
+          "chunk_id": "addendum2_header",
+          "file_name": "Addendum 2 RFP JA-207652 Student and Staff Computing Devices.pdf",
+          "page": 1,
+          "quote": "The Purpose of this Addendum is to extend the due date of this RFP. The new due date for this RFP will be July 9, 2024 at 2:00 PM CST."
+        }
+      ],
+      "status": "found",
+      "notes": "Two addenda: Q&A responses and deadline extension"
+    },
+    "product_name": {
+      "value": "Dell Latitude 5550, Dell Chromebooks, Dell Monitors",
+      "confidence": 0.85,
+      "sources": [
+        {
+          "chunk_id": "spec_chunk_1",
+          "file_name": "Dell_Laptop_Specs.pdf",
+          "page": 1,
+          "quote": "Dell Latitude 5550 SKU Description 210-BLYZ Dell Latitude 5550 XCTO Base Intel Core Ultra 5 125U processor"
+        }
+      ],
+      "status": "found",
+      "notes": "Specific Dell products specified in RFP"
+    },
+    "product_specs": {
+      "value": "Intel Core Ultra 5 125U, 12 cores, up to 4.3 GHz, 65W charger minimum, Windows 11 Pro",
+      "confidence": 0.8,
+      "sources": [
+        {
+          "chunk_id": "spec_chunk_1",
+          "file_name": "Dell_Laptop_Specs.pdf",
+          "page": 1,
+          "quote": "Intel Core Ultra 5 125U processor (12 MB cache, 12 cores, 14 threads, up to 4.3 GHz Turbo) ... 65W chargers being requested for the Chrome"
+        }
+      ],
+      "status": "found",
+      "notes": "Detailed specs in Dell_Laptop_Specs.pdf and addenda Q&A"
+    },
+    "signatory_name": {
+      "value": "Not found in available documents",
+      "confidence": 0.2,
+      "sources": [],
+      "status": "not_found",
+      "notes": "Affidavit documents present but signatory not extracted"
+    },
+    "sworn_statement": {
+      "value": "Not extracted from affidavit documents",
+      "confidence": 0.2,
+      "sources": [],
+      "status": "not_found",
+      "notes": "Contract_Affidavit.pdf and Mercury_Affidavit.pdf present but content not extracted"
+    }
+  },
+  "validation": {
+    "passed": 7,
+    "failed": 0,
+    "not_found": 6,
+    "total_fields": 13
+  }
+}

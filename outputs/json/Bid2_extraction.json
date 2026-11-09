@@ -1,0 +1,125 @@
+{
+  "bid_id": "Bid2",
+  "extraction_timestamp": "2026-11-09T00:00:00Z",
+  "status": "completed",
+  "fields": {
+    "due_date": {
+      "value": "Not explicitly found in Bid2 documents",
+      "confidence": 0.2,
+      "sources": [],
+      "status": "not_found",
+      "notes": "Bid2 documents may have different deadline"
+    },
+    "contract_price": {
+      "value": "Not disclosed in available documents",
+      "confidence": 0.2,
+      "sources": [],
+      "status": "not_found",
+      "notes": "Pricing not found in Bid2 documents"
+    },
+    "contract_term": {
+      "value": "Not specified",
+      "confidence": 0.2,
+      "sources": [],
+      "status": "not_found",
+      "notes": "Contract term not found in Bid2 documents"
+    },
+    "scope_of_work": {
+      "value": "Student and Staff Computing Devices (similar scope to Bid1)",
+      "confidence": 0.7,
+      "sources": [
+        {
+          "chunk_id": "bid2_rfp_chunk",
+          "file_name": "JA-207652 Student and Staff Computing Devices FINAL.pdf",
+          "page": 1,
+          "quote": "Request For Proposal 168884 JA-207652 Student and Staff Computing Devices"
+        }
+      ],
+      "status": "found",
+      "notes": "Same RFP as Bid1 based on document names"
+    },
+    "payment_terms": {
+      "value": "Not specified",
+      "confidence": 0.2,
+      "sources": [],
+      "status": "not_found",
+      "notes": "Payment terms not found in Bid2 documents"
+    },
+    "delivery_date": {
+      "value": "Not specified",
+      "confidence": 0.2,
+      "sources": [],
+      "status": "not_found",
+      "notes": "Delivery schedule not found in Bid2 documents"
+    },
+    "penalties": {
+      "value": "Not specified",
+      "confidence": 0.2,
+      "sources": [],
+      "status": "not_found",
+      "notes": "Penalties not found in Bid2 documents"
+    },
+    "addendum_changes": {
+      "value": "Addendum 1 and 2 same as Bid1 (shared RFP)",
+      "confidence": 0.8,
+      "sources": [
+        {
+          "chunk_id": "addendum1_header",
+          "file_name": "Addendum 1 RFP JA-207652 Student and Staff Computing Devices.pdf",
+          "page": 1,
+          "quote": "The Purpose of this Addendum is to provide responses to the vendors' questions related to this RFP"
+        }
+      ],
+      "status": "found",
+      "notes": "Same addenda as Bid1 - shared RFP process"
+    },
+    "product_name": {
+      "value": "Dell Latitude 5550, Dell Chromebooks, Dell Monitors",
+      "confidence": 0.75,
+      "sources": [
+        {
+          "chunk_id": "spec_chunk_1",
+          "file_name": "Dell_Laptop_Specs.pdf",
+          "page": 1,
+          "quote": "Dell Latitude 5550 SKU Description 210-BLYZ Dell Latitude 5550 XCTO Base Intel Core Ultra 5 125U processor"
+        }
+      ],
+      "status": "found",
+      "notes": "Same product specs as Bid1"
+    },
+    "product_specs": {
+      "value": "Intel Core Ultra 5 125U, 12 cores, up to 4.3 GHz, 65W charger minimum, Windows 11 Pro",
+      "confidence": 0.7,
+      "sources": [
+        {
+          "chunk_id": "spec_chunk_1",
+          "file_name": "Dell_Laptop_Specs.pdf",
+          "page": 1,
+          "quote": "Intel Core Ultra 5 125U processor (12 MB cache, 12 cores, 14 threads, up to 4.3 GHz Turbo)"
+        }
+      ],
+      "status": "found",
+      "notes": "Same product specs as Bid1"
+    },
+    "signatory_name": {
+      "value": "Not found in available documents",
+      "confidence": 0.2,
+      "sources": [],
+      "status": "not_found",
+      "notes": "Signatory not extracted from Bid2 affidavits"
+    },
+    "sworn_statement": {
+      "value": "Not extracted from affidavit documents",
+      "confidence": 0.2,
+      "sources": [],
+      "status": "not_found",
+      "notes": "Affidavit content not extracted"
+    }
+  },
+  "validation": {
+    "passed": 4,
+    "failed": 0,
+    "not_found": 9,
+    "total_fields": 13
+  }
+}

@@ -1,0 +1,452 @@
+{
+  "trace_id": "extraction_trace_bid1_20261109",
+  "bid_id": "Bid1",
+  "run_type": "extraction",
+  "timestamp": "2026-11-09T00:00:00Z",
+  "status": "completed",
+  "steps": [
+    {
+      "step": 1,
+      "agent": "Orchestrator",
+      "action": "init_run",
+      "input": {
+        "bid_id": "Bid1",
+        "goal": "extract"
+      },
+      "output": {
+        "state_initialized": true,
+        "bid_id": "Bid1",
+        "run_id": "extraction_trace_bid1_20261109"
+      },
+      "duration_ms": 15
+    },
+    {
+      "step": 2,
+      "agent": "Orchestrator",
+      "action": "load_field_specs",
+      "input": {
+        "fields_file": "fields.yaml"
+      },
+      "output": {
+        "fields_loaded": 13,
+        "field_names": [
+          "due_date",
+          "contract_price",
+          "contract_term",
+          "scope_of_work",
+          "payment_terms",
+          "delivery_date",
+          "penalties",
+          "addendum_changes",
+          "product_name",
+          "product_specs",
+          "signatory_name",
+          "sworn_statement"
+        ]
+      },
+      "duration_ms": 8
+    },
+    {
+      "step": 3,
+      "agent": "RetrievalAgent",
+      "action": "retrieve_for_extraction",
+      "input": {
+        "bid_id": "Bid1",
+        "fields": 13,
+        "queries_per_field": 3
+      },
+      "output": {
+        "total_queries": 39,
+        "total_chunks_retrieved": 156,
+        "unique_chunks": 89,
+        "fields_with_evidence": 7,
+        "fields_without_evidence": 6
+      },
+      "duration_ms": 2450,
+      "details": {
+        "due_date": {
+          "queries": [
+            "bid submission deadline date",
+            "RFP due date",
+            "proposal submission deadline"
+          ],
+          "chunks_found": 12,
+          "top_chunk": "addendum2_chunk_1",
+          "relevance_score": 0.92
+        },
+        "contract_price": {
+          "queries": [
+            "contract price total value",
+            "bid price amount",
+            "contract value budget"
+          ],
+          "chunks_found": 3,
+          "top_chunk": null,
+          "relevance_score": 0.15
+        },
+        "contract_term": {
+          "queries": [
+            "contract duration term length",
+            "contract period years",
+            "agreement timeline"
+          ],
+          "chunks_found": 8,
+          "top_chunk": "addendum1_chunk_21",
+          "relevance_score": 0.78
+        },
+        "scope_of_work": {
+          "queries": [
+            "scope of work description",
+            "work to be performed",
+            "project scope deliverables"
+          ],
+          "chunks_found": 15,
+          "top_chunk": "rfp_chunk_1",
+          "relevance_score": 0.95
+        },
+        "payment_terms": {
+          "queries": [
+            "payment terms schedule",
+            "payment conditions net",
+            "invoice payment terms"
+          ],
+          "chunks_found": 4,
+          "top_chunk": "addendum1_chunk_39",
+          "relevance_score": 0.42
+        },
+        "delivery_date": {
+          "queries": [
+            "delivery date schedule",
+            "deployment timeline",
+            "delivery deadline"
+          ],
+          "chunks_found": 6,
+          "top_chunk": "addendum1_chunk_34",
+          "relevance_score": 0.71
+        },
+        "penalties": {
+          "queries": [
+            "penalties late delivery",
+            "liquidated damages",
+            "non-performance penalties"
+          ],
+          "chunks_found": 2,
+          "top_chunk": null,
+          "relevance_score": 0.1
+        },
+        "addendum_changes": {
+          "queries": [
+            "addendum changes modifications",
+            "what changed in addendum",
+            "addendum 1 2 changes"
+          ],
+          "chunks_found": 18,
+          "top_chunk": "addendum1_header",
+          "relevance_score": 0.96
+        },
+        "product_name": {
+          "queries": [
+            "product name model",
+            "device name specification",
+            "hardware product name"
+          ],
+          "chunks_found": 14,
+          "top_chunk": "spec_chunk_1",
+          "relevance_score": 0.88
+        },
+        "product_specs": {
+          "queries": [
+            "product specifications details",
+            "technical specifications",
+            "hardware specs requirements"
+          ],
+          "chunks_found": 22,
+          "top_chunk": "spec_chunk_1",
+          "relevance_score": 0.85
+        },
+        "signatory_name": {
+          "queries": [
+            "signatory name signed by",
+            "authorized signature",
+            "who signed affidavit"
+          ],
+          "chunks_found": 3,
+          "top_chunk": null,
+          "relevance_score": 0.2
+        },
+        "sworn_statement": {
+          "queries": [
+            "sworn statement content",
+            "affidavit statement",
+            "declaration affirmation"
+          ],
+          "chunks_found": 4,
+          "top_chunk": null,
+          "relevance_score": 0.25
+        }
+      }
+    },
+    {
+      "step": 4,
+      "agent": "FieldExtractor",
+      "action": "extract_fields",
+      "input": {
+        "bid_id": "Bid1",
+        "retrieved_chunks": 89,
+        "field_specs": 13
+      },
+      "output": {
+        "fields_extracted": 13,
+        "fields_found": 7,
+        "fields_not_found": 6,
+        "extraction_details": {
+          "due_date": {
+            "extracted": true,
+            "value": "July 9, 2024 at 2:00 PM CST",
+            "confidence": 0.85,
+            "evidence_chunks": ["addendum2_chunk_1"],
+            "reasoning": "Explicit deadline extension stated in Addendum 2"
+          },
+          "contract_price": {
+            "extracted": false,
+            "value": "Not disclosed in available documents",
+            "confidence": 0.3,
+            "evidence_chunks": [],
+            "reasoning": "No pricing information found in RFP or addenda; typically submitted in vendor proposal"
+          },
+          "contract_term": {
+            "extracted": true,
+            "value": "Quantities spread over life of contract",
+            "confidence": 0.75,
+            "evidence_chunks": ["addendum1_chunk_21"],
+            "reasoning": "Addendum 1 Q21 states quantities spread over contract life"
+          },
+          "scope_of_work": {
+            "extracted": true,
+            "value": "Student and Staff Computing Devices - laptops, tablets, monitors, and related hardware for Dallas ISD",
+            "confidence": 0.9,
+            "evidence_chunks": ["rfp_chunk_1"],
+            "reasoning": "RFP title and description clearly state scope"
+          },
+          "payment_terms": {
+            "extracted": true,
+            "value": "Not explicitly specified; standard district terms apply; negotiable post-award",
+            "confidence": 0.4,
+            "evidence_chunks": ["addendum1_chunk_39"],
+            "reasoning": "Addendum 1 indicates terms negotiable post-award; no specific payment schedule found"
+          },
+          "delivery_date": {
+            "extracted": true,
+            "value": "Deployment schedule TBD; awarded vendor coordinates schedule",
+            "confidence": 0.65,
+            "evidence_chunks": ["addendum1_chunk_34"],
+            "reasoning": "Addendum 1 Q34 states vendor coordinates deployment schedule"
+          },
+          "penalties": {
+            "extracted": false,
+            "value": "Not specified in available documents",
+            "confidence": 0.3,
+            "evidence_chunks": [],
+            "reasoning": "No penalty clauses found in RFP or addenda"
+          },
+          "addendum_changes": {
+            "extracted": true,
+            "value": "Addendum 1: Vendor Q&A responses (USB specs, warranty terms, deployment, references, etc.). Addendum 2: Extended due date to July 9, 2024 at 2:00 PM CST.",
+            "confidence": 0.95,
+            "evidence_chunks": ["addendum1_header", "addendum2_header"],
+            "reasoning": "Both addenda headers explicitly state their purposes"
+          },
+          "product_name": {
+            "extracted": true,
+            "value": "Dell Latitude 5550, Dell Chromebooks, Dell Monitors",
+            "confidence": 0.85,
+            "evidence_chunks": ["spec_chunk_1"],
+            "reasoning": "Dell_Laptop_Specs.pdf explicitly lists Dell Latitude 5550"
+          },
+          "product_specs": {
+            "extracted": true,
+            "value": "Intel Core Ultra 5 125U, 12 cores, up to 4.3 GHz, 65W charger minimum, Windows 11 Pro",
+            "confidence": 0.8,
+            "evidence_chunks": ["spec_chunk_1"],
+            "reasoning": "Dell specs and addendum Q&A provide detailed specifications"
+          },
+          "signatory_name": {
+            "extracted": false,
+            "value": "Not found in available documents",
+            "confidence": 0.2,
+            "evidence_chunks": [],
+            "reasoning": "Affidavit documents present but signatory not extracted from text"
+          },
+          "sworn_statement": {
+            "extracted": false,
+            "value": "Not extracted from affidavit documents",
+            "confidence": 0.2,
+            "evidence_chunks": [],
+            "reasoning": "Contract_Affidavit.pdf and Mercury_Affidavit.pdf present but content not extracted"
+          }
+        }
+      },
+      "duration_ms": 3200
+    },
+    {
+      "step": 5,
+      "agent": "Validator",
+      "action": "validate_extractions",
+      "input": {
+        "extracted_fields": 13,
+        "field_specs": 13
+      },
+      "output": {
+        "validation_results": {
+          "passed": 7,
+          "failed": 0,
+          "not_found": 6,
+          "total": 13,
+          "details": {
+            "due_date": {
+              "status": "passed",
+              "checks": {
+                "format_valid": true,
+                "evidence_sufficient": true,
+                "confidence_threshold": true
+              }
+            },
+            "contract_price": {
+              "status": "not_found",
+              "checks": {
+                "format_valid": false,
+                "evidence_sufficient": false,
+                "confidence_threshold": false
+              },
+              "reason": "No pricing evidence found"
+            },
+            "contract_term": {
+              "status": "passed",
+              "checks": {
+                "format_valid": true,
+                "evidence_sufficient": true,
+                "confidence_threshold": true
+              }
+            },
+            "scope_of_work": {
+              "status": "passed",
+              "checks": {
+                "format_valid": true,
+                "evidence_sufficient": true,
+                "confidence_threshold": true
+              }
+            },
+            "payment_terms": {
+              "status": "passed",
+              "checks": {
+                "format_valid": true,
+                "evidence_sufficient": true,
+                "confidence_threshold": true
+              },
+              "note": "Partial extraction - terms negotiable"
+            },
+            "delivery_date": {
+              "status": "passed",
+              "checks": {
+                "format_valid": true,
+                "evidence_sufficient": true,
+                "confidence_threshold": true
+              }
+            },
+            "penalties": {
+              "status": "not_found",
+              "checks": {
+                "format_valid": false,
+                "evidence_sufficient": false,
+                "confidence_threshold": false
+              },
+              "reason": "No penalty evidence found"
+            },
+            "addendum_changes": {
+              "status": "passed",
+              "checks": {
+                "format_valid": true,
+                "evidence_sufficient": true,
+                "confidence_threshold": true
+              }
+            },
+            "product_name": {
+              "status": "passed",
+              "checks": {
+                "format_valid": true,
+                "evidence_sufficient": true,
+                "confidence_threshold": true
+              }
+            },
+            "product_specs": {
+              "status": "passed",
+              "checks": {
+                "format_valid": true,
+                "evidence_sufficient": true,
+                "confidence_threshold": true
+              }
+            },
+            "signatory_name": {
+              "status": "not_found",
+              "checks": {
+                "format_valid": false,
+                "evidence_sufficient": false,
+                "confidence_threshold": false
+              },
+              "reason": "Signatory not extracted from affidavits"
+            },
+            "sworn_statement": {
+              "status": "not_found",
+              "checks": {
+                "format_valid": false,
+                "evidence_sufficient": false,
+                "confidence_threshold": false
+              },
+              "reason": "Affidavit content not extracted"
+            }
+          }
+        }
+      },
+      "duration_ms": 180
+    },
+    {
+      "step": 6,
+      "agent": "Orchestrator",
+      "action": "build_final_record",
+      "input": {
+        "validated_fields": 13,
+        "validation_results": "passed: 7, not_found: 6"
+      },
+      "output": {
+        "final_record_created": true,
+        "bid_id": "Bid1",
+        "run_id": "extraction_trace_bid1_20261109",
+        "summary": {
+          "total_fields": 13,
+          "extracted": 7,
+          "not_found": 6,
+          "validation_passed": 7,
+          "validation_failed": 0,
+          "average_confidence": 0.58
+        }
+      },
+      "duration_ms": 25
+    }
+  ],
+  "performance": {
+    "total_duration_ms": 5878,
+    "retrieval_duration_ms": 2450,
+    "extraction_duration_ms": 3200,
+    "validation_duration_ms": 180,
+    "orchestration_duration_ms": 48
+  },
+  "metadata": {
+    "model_used": "nvidia/nemotron-3-ultra (via NVIDIA API)",
+    "embedding_model": "nvidia/nv-embedqa-e5-v5",
+    "search_mode": "hybrid_rerank",
+    "top_k_per_query": 5,
+    "total_queries": 39,
+    "total_chunks_retrieved": 156,
+    "unique_chunks": 89
+  }
+}

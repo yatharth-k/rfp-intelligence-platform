@@ -10,6 +10,13 @@ __pycache__/
 
 # Project-specific
 outputs/
+!outputs/json/
+!outputs/json/*.json
+!outputs/evaluation/
+!outputs/evaluation/*.md
+!outputs/traces/
+!outputs/traces/*.json
+!outputs/qa_log.json
 storage/*.db
 storage/*.sqlite
 storage/*.sqlite-shm
@@ -19,8 +26,8 @@ storage/qdrant_test/
 storage/parsed/
 !storage/.gitkeep
 
-# Trace outputs
-outputs/traces/
+# Trace outputs (legacy)
+# outputs/traces/  (now allowed above)
 
 # IDE specific
 .vscode/
@@ -36,4 +43,7 @@ eggs/
 
 # Documentation (exclude from repo - kept separately)
 *.md
+!README.md
+!outputs/evaluation/*.md
 *.txt
+!outputs/qa_log.json

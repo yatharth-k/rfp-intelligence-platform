@@ -1,0 +1,246 @@
+{
+  "qa_log": [
+    {
+      "question_id": 1,
+      "bid_id": "Bid1",
+      "question": "What is the bid submission deadline?",
+      "answer": "The bid submission deadline is July 9, 2024 at 2:00 PM CST, as extended by Addendum 2.",
+      "confidence": 0.85,
+      "question_type": "single_fact",
+      "sources": [
+        {
+          "chunk_id": "addendum2_chunk_1",
+          "file_name": "Addendum 2 RFP JA-207652 Student and Staff Computing Devices.pdf",
+          "page_start": 1,
+          "page_end": 1,
+          "doc_type": "addendum",
+          "quote": "The new due date for this RFP will be July 9, 2024 at 2:00 PM CST."
+        }
+      ],
+      "timestamp": "2026-11-09T00:00:00Z"
+    },
+    {
+      "question_id": 2,
+      "bid_id": "Bid1",
+      "question": "What are the bid bond requirements?",
+      "answer": "Bid bond requirements are not explicitly detailed in the available documents. The RFP references standard district terms and conditions which may include bonding requirements.",
+      "confidence": 0.4,
+      "question_type": "single_fact",
+      "sources": [],
+      "timestamp": "2026-11-09T00:00:00Z"
+    },
+    {
+      "question_id": 3,
+      "bid_id": "Bid1",
+      "question": "What changed in the addendum?",
+      "answer": "Addendum 1 provides responses to vendor questions covering: USB 3.1 minimum requirement for displays, warranty terms (1 year for Chromebooks, 3 years for Windows laptops), deployment schedule coordination, reference requirements (no proximity restriction), and battery life measurement (manufacturer specs). Addendum 2 extends the submission deadline to July 9, 2024 at 2:00 PM CST.",
+      "confidence": 0.95,
+      "question_type": "summary",
+      "sources": [
+        {
+          "chunk_id": "addendum1_header",
+          "file_name": "Addendum 1 RFP JA-207652 Student and Staff Computing Devices.pdf",
+          "page_start": 1,
+          "page_end": 1,
+          "doc_type": "addendum",
+          "quote": "The Purpose of this Addendum is to provide responses to the vendors' questions related to this RFP"
+        },
+        {
+          "chunk_id": "addendum2_header",
+          "file_name": "Addendum 2 RFP JA-207652 Student and Staff Computing Devices.pdf",
+          "page_start": 1,
+          "page_end": 1,
+          "doc_type": "addendum",
+          "quote": "The Purpose of this Addendum is to extend the due date of this RFP. The new due date for this RFP will be July 9, 2024 at 2:00 PM CST."
+        }
+      ],
+      "timestamp": "2026-11-09T00:00:00Z"
+    },
+    {
+      "question_id": 4,
+      "bid_id": "Bid1",
+      "question": "What are the evaluation criteria?",
+      "answer": "Evaluation criteria include: samples required only from awarded vendors when ready for large purchases; laptop battery life measured by manufacturer specifications; references do not need to be from Dallas/Fort Worth area (no proximity restriction); USB 3.1 minimum for display ports; warranty requirements (1 year Chromebook, 3 years Windows laptop); deployment schedule coordinated with awarded vendor.",
+      "confidence": 0.75,
+      "question_type": "list_query",
+      "sources": [
+        {
+          "chunk_id": "addendum1_chunk_37",
+          "file_name": "Addendum 1 RFP JA-207652 Student and Staff Computing Devices.pdf",
+          "page_start": 1,
+          "page_end": 1,
+          "doc_type": "addendum",
+          "quote": "Samples will only be required from awarded vendors when ready to purchase large quantities."
+        },
+        {
+          "chunk_id": "addendum1_chunk_36",
+          "file_name": "Addendum 1 RFP JA-207652 Student and Staff Computing Devices.pdf",
+          "page_start": 1,
+          "page_end": 1,
+          "doc_type": "addendum",
+          "quote": "This will be based on the manufacturer's specifications."
+        }
+      ],
+      "timestamp": "2026-11-09T00:00:00Z"
+    },
+    {
+      "question_id": 5,
+      "bid_id": "Bid1",
+      "question": "What is the contract duration?",
+      "answer": "The contract duration is not explicitly stated as a fixed term. However, Addendum 1 indicates that quantities will be spread over the life of the contract, implying a multi-year agreement.",
+      "confidence": 0.7,
+      "question_type": "single_fact",
+      "sources": [
+        {
+          "chunk_id": "addendum1_chunk_21",
+          "file_name": "Addendum 1 RFP JA-207652 Student and Staff Computing Devices.pdf",
+          "page_start": 1,
+          "page_end": 1,
+          "doc_type": "addendum",
+          "quote": "The quantities will be spread over life of the contract."
+        }
+      ],
+      "timestamp": "2026-11-09T00:00:00Z"
+    },
+    {
+      "question_id": 6,
+      "bid_id": "Bid1",
+      "question": "What are the insurance requirements?",
+      "answer": "Insurance/warranty requirements include: all warranty options must be official manufacturer warranties; minimum 1-year warranty for student Chromebooks; minimum 3-year warranty for student and staff Windows laptops; Dallas ISD requires warranties to be underwritten by OEM; additional break-fix repair programs are not required but may be offered.",
+      "confidence": 0.8,
+      "question_type": "list_query",
+      "sources": [
+        {
+          "chunk_id": "addendum1_chunk_28",
+          "file_name": "Addendum 1 RFP JA-207652 Student and Staff Computing Devices.pdf",
+          "page_start": 1,
+          "page_end": 1,
+          "doc_type": "addendum",
+          "quote": "Answer: Yes. [All warranty options need to be official manufacturer warranties]"
+        },
+        {
+          "chunk_id": "addendum1_chunk_29",
+          "file_name": "Addendum 1 RFP JA-207652 Student and Staff Computing Devices.pdf",
+          "page_start": 1,
+          "page_end": 1,
+          "doc_type": "addendum",
+          "quote": "As a minimum requirement, Dallas ISD is asking for a one-year warranty for student Chromebooks and three years for student and staff Windows laptops"
+        },
+        {
+          "chunk_id": "addendum1_chunk_8",
+          "file_name": "Addendum 1 RFP JA-207652 Student and Staff Computing Devices.pdf",
+          "page_start": 1,
+          "page_end": 1,
+          "doc_type": "addendum",
+          "quote": "Dallas ISD will ask all warranties to be made by OEM."
+        }
+      ],
+      "timestamp": "2026-11-09T00:00:00Z"
+    },
+    {
+      "question_id": 7,
+      "bid_id": "Bid1",
+      "question": "What is the delivery schedule?",
+      "answer": "The delivery schedule is not fixed in the RFP. Any awarded vendor will need to coordinate a deployment schedule including number of devices per address, device allocation per address, and deployment frequency (weekly/monthly).",
+      "confidence": 0.7,
+      "question_type": "single_fact",
+      "sources": [
+        {
+          "chunk_id": "addendum1_chunk_34",
+          "file_name": "Addendum 1 RFP JA-207652 Student and Staff Computing Devices.pdf",
+          "page_start": 1,
+          "page_end": 1,
+          "doc_type": "addendum",
+          "quote": "Any awarded vendor will need to coordinate a schedule for deployments. Number of devices to each address, which devices to each address. How many deployments per week, month and when?"
+        }
+      ],
+      "timestamp": "2026-11-09T00:00:00Z"
+    },
+    {
+      "question_id": 8,
+      "bid_id": "Bid1",
+      "question": "What are the payment terms?",
+      "answer": "Specific payment terms are not detailed in the RFP documents. Addendum 1 indicates that legal terms and conditions (which would include payment terms) are negotiable post-award, with the district requesting removal of any vendor deviations/exceptions to standard terms.",
+      "confidence": 0.45,
+      "question_type": "single_fact",
+      "sources": [
+        {
+          "chunk_id": "addendum1_chunk_39",
+          "file_name": "Addendum 1 RFP JA-207652 Student and Staff Computing Devices.pdf",
+          "page_start": 1,
+          "page_end": 1,
+          "doc_type": "addendum",
+          "quote": "Will DISD Negotiate the legal terms and conditions after the award of this bid has been made? Answer: If deviations/exceptions to the terms and conditions are submitted, the District will respectfully request the removal of said deviations/exceptions."
+        }
+      ],
+      "timestamp": "2026-11-09T00:00:00Z"
+    },
+    {
+      "question_id": 9,
+      "bid_id": "Bid1",
+      "question": "What are the warranty requirements?",
+      "answer": "Warranty requirements: (1) All warranty options must be official manufacturer warranties (OEM). (2) Minimum 1-year warranty for student Chromebooks. (3) Minimum 3-year warranty for student and staff Windows laptops. (4) Dallas ISD requires warranties to be underwritten by OEM. (5) Additional break-fix onsite repair programs are not required but may be offered by vendors.",
+      "confidence": 0.85,
+      "question_type": "list_query",
+      "sources": [
+        {
+          "chunk_id": "addendum1_chunk_28",
+          "file_name": "Addendum 1 RFP JA-207652 Student and Staff Computing Devices.pdf",
+          "page_start": 1,
+          "page_end": 1,
+          "doc_type": "addendum",
+          "quote": "Answer: Yes. [All warranty options need to be official manufacturer warranties]"
+        },
+        {
+          "chunk_id": "addendum1_chunk_29",
+          "file_name": "Addendum 1 RFP JA-207652 Student and Staff Computing Devices.pdf",
+          "page_start": 1,
+          "page_end": 1,
+          "doc_type": "addendum",
+          "quote": "As a minimum requirement, Dallas ISD is asking for a one-year warranty for student Chromebooks and three years for student and staff Windows laptops"
+        }
+      ],
+      "timestamp": "2026-11-09T00:00:00Z"
+    },
+    {
+      "question_id": 10,
+      "bid_id": "Bid1",
+      "question": "What is the pre-proposal meeting date?",
+      "answer": "The pre-proposal meeting date is not explicitly stated in the addenda. The RFP header indicates a pre-proposal meeting was scheduled, but the exact date is in the main RFP document (JA-207652 Student and Staff Computing Devices FINAL.pdf, page 1).",
+      "confidence": 0.5,
+      "question_type": "single_fact",
+      "sources": [
+        {
+          "chunk_id": "rfp_chunk_1",
+          "file_name": "JA-207652 Student and Staff Computing Devices FINAL.pdf",
+          "page_start": 1,
+          "page_end": 1,
+          "doc_type": "rfp",
+          "quote": "Pre-Proposal Meeting 10-J..."
+        }
+      ],
+      "timestamp": "2026-11-09T00:00:00Z"
+    },
+    {
+      "question_id": 11,
+      "bid_id": "Bid2",
+      "question": "What is the project scope?",
+      "answer": "The project scope is the same as Bid1: Student and Staff Computing Devices for Dallas ISD (RFP JA-207652), including laptops, tablets, monitors, and related hardware with associated warranties and deployment services.",
+      "confidence": 0.8,
+      "question_type": "single_fact",
+      "sources": [
+        {
+          "chunk_id": "bid2_rfp_chunk",
+          "file_name": "JA-207652 Student and Staff Computing Devices FINAL.pdf",
+          "page_start": 1,
+          "page_end": 1,
+          "doc_type": "rfp",
+          "quote": "Request For Proposal 168884 JA-207652 Student and Staff Computing Devices"
+        }
+      ],
+      "timestamp": "2026-11-09T00:00:00Z"
+    }
+  ],
+  "total_questions": 11,
+  "generated_at": "2026-11-09T00:00:00Z"
+}
