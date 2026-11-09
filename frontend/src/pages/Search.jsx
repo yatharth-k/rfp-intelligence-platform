@@ -127,7 +127,7 @@ export default function Search() {
                 className="search-input"
               />
               <Button type="submit" variant="primary" size="lg" loading={loading} disabled={loading || !query.trim()}>
-                <Search size={20} />
+                <SearchIcon size={20} />
               </Button>
             </div>
 
@@ -208,7 +208,7 @@ export default function Search() {
         <CardContent>
           {results.length === 0 && !loading && query.trim() && (
             <div className="empty-state">
-              <Search size={48} />
+              <SearchIcon size={48} />
               <p>No results found for "{query}"</p>
               <p className="hint">Try different keywords or check if documents are indexed</p>
             </div>
