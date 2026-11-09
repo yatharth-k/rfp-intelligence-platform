@@ -11,6 +11,12 @@ __pycache__/
 # Project-specific
 outputs/
 storage/*.db
+storage/*.sqlite
+storage/*.sqlite-shm
+storage/*.sqlite-wal
+storage/qdrant/
+storage/qdrant_test/
+storage/parsed/
 !storage/.gitkeep
 
 # Trace outputs
