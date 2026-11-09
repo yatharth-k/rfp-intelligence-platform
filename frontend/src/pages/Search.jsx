@@ -64,13 +64,15 @@ export default function Search() {
   }, [query, selectedBids, mode, topK]);
 
   const performSearch = async () => {
-    if (!query.trim() || selectedBids.length === 0) return;
+    if (!query.trim()) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      const res = await searchDocuments(query, selectedBids, topK, mode);
+      // If no bids selected, search across all bids (pass empty array to omit filter)
+      const bidIds = selectedBids.length > 0 ? selectedBids : undefined;
+      const res = await searchDocuments(query, bidIds, topK, mode);
       // Only update state if component is still mounted
       setResults(res.data.results || []);
       setTotalCount(res.data.total_count || 0);
@@ -138,6 +140,9 @@ export default function Search() {
                     </label>
                   ))}
                   {bids.length === 0 && <span className="no-bids">No bids indexed yet</span>}
+                  {selectedBids.length === 0 && bids.length > 0 && (
+                    <span className="hint">No bid selected — searches all bids</span>
+                  )}
                 </div>
               </div>
 

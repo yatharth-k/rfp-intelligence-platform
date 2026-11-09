@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE = 'http://localhost:8000';
+// Use relative URL in development (proxied by Vite), absolute in production
+const API_BASE = import.meta.env.DEV ? '' : 'http://localhost:8000';
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -26,7 +27,7 @@ export const indexDocuments = (bidId, force = false) =>
 
 // Search
 export const searchDocuments = (query, bidIds, topK = 5, mode = 'fusion') =>
-  api.post('/search', { query, bid_ids: bidIds, top_k: topK, mode });
+  api.post('/search', { query, bid_ids: bidIds || [], top_k: topK, mode });
 
 // Ask
 export const askQuestion = (bidId, question, topK = 5, mode = 'fusion') =>

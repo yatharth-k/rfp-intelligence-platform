@@ -6,10 +6,16 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
-      '/api': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-      },
+      '/search': { target: 'http://localhost:8000', changeOrigin: true },
+      '/ask': { target: 'http://localhost:8000', changeOrigin: true },
+      '/ingest': { target: 'http://localhost:8000', changeOrigin: true },
+      '/index': { target: 'http://localhost:8000', changeOrigin: true },
+      '/bids': { target: 'http://localhost:8000', changeOrigin: true },
+      '/documents': { target: 'http://localhost:8000', changeOrigin: true },
+      '/chunks': { target: 'http://localhost:8000', changeOrigin: true },
+      '/extract': { target: 'http://localhost:8000', changeOrigin: true },
+      '/upload': { target: 'http://localhost:8000', changeOrigin: true },
+      '/health': { target: 'http://localhost:8000', changeOrigin: true },
     },
   },
   build: {
