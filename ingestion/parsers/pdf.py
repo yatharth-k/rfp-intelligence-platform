@@ -90,6 +90,7 @@ def parse_pdf(path: Path, cfg=None) -> ParsedDocument:
     return ParsedDocument(
         file_name=file_name,
         file_hash=file_hash,
+        file_kind="pdf",
         doc_type=doc_type,
         addendum_number=None,  # Will be set by detection
         doc_date=None,
@@ -204,92 +205,41 @@ def _extract_prose(page, tables: list) -> str:
 
 
 def _build_blocks(page, prose_text: str) -> list[Block]:
-    """Build text blocks from a PDF page.
+    """Build text blocks from a PDF page - simplified version.
 
-    Groups words into paragraphs based on vertical gaps relative to median line gap.
-    Identifies heading candidates based on font size, bold/short text, or section patterns.
+    Splits prose text by double newlines into paragraph blocks.
     """
     try:
-        # Extract words with coordinates
-        words = page.extract_words(x_tolerance=1, y_tolerance=1)
-
-        if not words:
+        if not prose_text or not prose_text.strip():
             return []
 
-        # Sort words by position (top to bottom, left to right)
-        words.sort(key=lambda w: (w["top"], w["x0"]))
+        # Split text into paragraphs by double newlines
+        paragraphs = [p.strip() for p in prose_text.split("\n\n") if p.strip()]
 
-        # Group words into lines based on vertical proximity
-        lines = _group_into_lines(words)
-
-        # Group lines into paragraphs based on horizontal continuation and vertical gaps
-        paragraphs = _group_into_paragraphs(lines)
-
-        # Build blocks
         blocks = []
-        current_block: list[str] = []
-        current_font_size = None
-        current_is_bold = False
+        for i, para in enumerate(paragraphs):
+            # Check if paragraph looks like a heading
+            is_heading = False
+            level = None
+            if len(para.split()) < 15:  # Short paragraphs might be headings
+                heading_patterns = [
+                    r"^\d+(\.\d+)*[\).]\s+\S",
+                    r"^(ARTICLE|SECTION|PART|EXHIBIT|ATTACHMENT)\b",
+                    r"^[A-Z]{2,}\s+\d+",
+                ]
+                for pattern in heading_patterns:
+                    if re.match(pattern, para):
+                        is_heading = True
+                        level = 1
+                        break
 
-        for line in paragraphs:
-            line_text = " ".join(line["words"])
-            line_font_size = line.get("avg_font_size", 12)
-            line_is_bold = line.get("is_bold", False)
-            line_height = line.get("height", 12)
-
-            # Check if this should start a new block/section
-            is_heading_candidate = False
-            heading_level = None
-
-            # Heuristic (a): font size meaningfully larger than median
-            if line_font_size > 1.2 * current_font_size if current_font_size else False:
-                is_heading_candidate = True
-                heading_level = 1
-
-            # Heuristic (b): bold and short
-            if line_is_bold and len(line_text.split()) < 12:
-                is_heading_candidate = True
-                heading_level = 1
-
-            # Heuristic (c): section pattern
-            section_patterns = [
-                r"^\d+(\.\d+)*[\).]\s+\S",
-                r"^(ARTICLE|SECTION|PART|EXHIBIT|ATTACHMENT)\b",
-                r"^[A-Z]{2,}\s+\d+",  # ALL-CAPS with number
-            ]
-            for pattern in section_patterns:
-                if re.match(pattern, line_text):
-                    is_heading_candidate = True
-                    heading_level = (
-                        len(re.match(r"(\d+)(\.\d+)*", line_text).group(1).split("."))
-                        if re.match(r"^\d+(\.\d+)*", line_text)
-                        else 1
-                    )
-                    break
-
-            if is_heading_candidate and current_block:
-                # Close current block and start new heading block
-                block_text = " ".join(current_block)
-                blocks.append(Block(
-                    kind="heading" if is_heading_candidate else "paragraph",
-                    text=block_text,
-                    level=heading_level,
-                    page=page.metadata.get("page_number", 1) if hasattr(page, 'metadata') else 1,
-                    font_size=current_font_size,
-                ))
-                current_block = [line_text]
-            else:
-                current_block.append(line_text)
-
-        # Close last block
-        if current_block:
-            block_text = " ".join(current_block)
             blocks.append(Block(
-                kind="heading" if current_block else "paragraph",
-                text=block_text,
-                level=None,
-                page=1,
-                font_size=current_font_size,
+                kind="heading" if is_heading else "paragraph",
+                text=para,
+                page=page.page_number if hasattr(page, 'page_number') else 1,
+                level=level,
+                font_size=None,
+                bbox=None,
             ))
 
         return blocks
@@ -298,100 +248,8 @@ def _build_blocks(page, prose_text: str) -> list[Block]:
         return []
 
 
-def _group_into_lines(words: list) -> list:
-    """Group words into lines based on vertical proximity."""
-    if not words:
-        return []
-
-    lines = []
-    current_line = [words[0]]
-    current_top = words[0]["top"]
-    current_bottom = words[0]["bottom"]
-
-    for word in words[1:]:
-        # Check if word is on the same line (within vertical threshold)
-        vertical_gap = abs(word["top"] - current_top)
-        # Also check bottom alignment
-        bottom_gap = abs(word["bottom"] - current_bottom)
-
-        # Threshold: words within ~5px vertical difference are on same line
-        if vertical_gap < 5 and bottom_gap < 5:
-            current_line.append(word)
-            current_top = min(current_top, word["top"])
-            current_bottom = max(current_bottom, word["bottom"])
-        else:
-            # Save current line and start new one
-            lines.append(_create_line_dict(current_line))
-            current_line = [word]
-            current_top = word["top"]
-            current_bottom = word["bottom"]
-
-    # Don't forget the last line
-    if current_line:
-        lines.append(_create_line_dict(current_line))
-
-    return lines
-
-
-def _create_line_dict(words: list) -> dict:
-    """Create a line dictionary from a list of words."""
-    if not words:
-        return {}
-
-    # Sort words left-to-right
-    sorted_words = sorted(words, key=lambda w: w["x0"])
-
-    # Calculate average font size
-    font_sizes = [w.get("size", 12) for w in sorted_words]
-    avg_font_size = sum(font_sizes) / len(font_sizes) if font_sizes else 12
-
-    # Check if any word is bold (has font name indicating bold)
-    is_bold = any("Bold" in str(w.get("font", "")) for w in sorted_words)
-
-    return {
-        "words": [w["text"] for w in sorted_words],
-        "text": " ".join(w["text"] for w in sorted_words),
-        "avg_font_size": avg_font_size,
-        "is_bold": is_bold,
-        "height": max(w.get("bottom", 0) for w in sorted_words)
-        - min(w.get("top", 0) for w in sorted_words),
-    }
-
-
-def _group_into_paragraphs(lines: list) -> list:
-    """Group lines into paragraphs based on vertical gap and horizontal continuity."""
-    if not lines:
-        return []
-
-    paragraphs = []
-    current_paragraph = [lines[0]]
-
-    for line in lines[1:]:
-        # Check vertical gap between last line of current para and this line
-        last_line = current_paragraph[-1]
-        gap = line["avg_font_size"]  # Using font size as proxy for vertical position
-
-        # If vertical gap is large ( > median line gap * threshold), start new para
-        # For simplicity, if the line starts a new horizontal section or has
-        # significantly different font size, start new paragraph
-        if len(current_paragraph) > 1:
-            # Check if this line continues the paragraph horizontally
-            last_text = " ".join(w["text"] for w in current_paragraph[-1]["words"])
-            current_start = line["words"][0][:20] if line["words"] else ""
-
-            # Simple heuristic: if the line has similar indentation, continue
-            if abs(line["avg_font_size"] - sum(l["avg_font_size"] for l in current_paragraph) / len(current_paragraph)) < 4:
-                current_paragraph.append(line)
-            else:
-                paragraphs.append(current_paragraph)
-                current_paragraph = [line]
-        else:
-            current_paragraph.append(line)
-
-    if current_paragraph:
-        paragraphs.append(current_paragraph)
-
-    return paragraphs
+# Remove the old complex helper functions - they're no longer needed
+# _group_into_lines, _group_into_paragraphs, _create_line_dict are removed
 
 
 def _apply_heading_hints(blocks: list, page) -> None:
@@ -402,20 +260,36 @@ def _apply_heading_hints(blocks: list, page) -> None:
     pass
 
 
-def _guess_doc_type(filename: str) -> DocType:
+def _apply_page_flags(page, blocks: list) -> list[str]:
+    """Determine page flags based on content."""
+    flags = []
+    char_count = sum(len(b.text) for b in blocks) if blocks else 0
+    if char_count < 30:
+        flags.append("empty")
+    # Check if page has images (indicating scanned content)
+    try:
+        if page.images and len(page.images) > 0:
+            if char_count < 100:
+                flags.append("needs_ocr")
+    except Exception:
+        pass
+    return flags
+
+
+def _guess_doc_type(filename: str) -> str:
     """Guess document type from filename - simplified detection."""
     name_lower = filename.lower()
 
     if any(kw in name_lower for kw in ["addendum", "addenda"]):
-        return DocType.ADDENDUM
+        return "addendum"
     if any(kw in name_lower for kw in ["affidavit", "certification", "disclosure"]):
-        return DocType.AFFIDAVIT
+        return "affidavit"
     if any(kw in name_lower for kw in ["spec", "specification"]):
-        return DocType.SPECS
+        return "spec"
     if any(kw in name_lower for kw in ["rfp", "bid", "proposal", "solicitation"]):
-        return DocType.RFP
+        return "rfp"
 
-    return DocType.BID_PAGE  # Default for HTML/bid pages
+    return "bid_page"  # Default for HTML/bid pages
 
 
 def _extract_title(first_page) -> Optional[str]:

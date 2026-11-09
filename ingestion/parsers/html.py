@@ -162,6 +162,7 @@ def parse_html(path: Path, cfg=None) -> ParsedDocument:
             )]
         except Exception:
             blocks = []
+        title = None
 
     # Build page
     page = Page(
@@ -178,6 +179,7 @@ def parse_html(path: Path, cfg=None) -> ParsedDocument:
     return ParsedDocument(
         file_name=file_name,
         file_hash=file_hash,
+        file_kind="html",
         doc_type=doc_type,
         addendum_number=None,
         doc_date=None,
@@ -263,20 +265,20 @@ def _clean_text(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-def _guess_doc_type(filename: str) -> DocType:
+def _guess_doc_type(filename: str) -> str:
     """Guess document type from filename."""
     name_lower = filename.lower()
 
     if any(kw in name_lower for kw in ["addendum", "addenda"]):
-        return DocType.ADDENDUM
+        return "addendum"
     if any(kw in name_lower for kw in ["affidavit", "certification", "disclosure"]):
-        return DocType.AFFIDAVIT
+        return "affidavit"
     if any(kw in name_lower for kw in ["spec", "specification"]):
-        return DocType.SPECS
+        return "spec"
     if any(kw in name_lower for kw in ["rfp", "bid", "proposal", "solicitation"]):
-        return DocType.RFP
+        return "rfp"
 
-    return DocType.BID_PAGE
+    return "bid_page"
 
 
 def _file_hash(bytes_data: bytes) -> str:

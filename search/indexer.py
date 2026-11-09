@@ -217,7 +217,7 @@ class Indexer:
                 bid_id=bid_id,
                 file_name=doc.file_name,
                 rel_path=str(doc.file_name),
-                doc_type=doc.doc_types[0].value if doc.doc_types else DocType.BID_PAGE.value,
+                doc_type=doc.doc_type.value if hasattr(doc.doc_type, "value") else str(doc.doc_type),
                 addendum_number=doc.addendum_number,
                 n_chunks=len(file_chunks) if file_chunks else 0,
                 status="ok",
@@ -355,7 +355,7 @@ class Indexer:
             # For now, call the embedding client
 
             # Apply rate limiting
-            self.rate_limiter.wait()
+            self.rate_limiter.acquire()
 
             try:
                 embedding_result = self.embedding_client.embed_query(chunk.text)

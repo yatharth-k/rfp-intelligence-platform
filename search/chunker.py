@@ -139,7 +139,7 @@ def _chunk_addendum(doc: "ParsedDocument", min_tokens: int, max_tokens: int) -> 
                 # If we had a previous item and it has content, finalize it
                 if current_item_text.strip() and item_number is not None:
                     chunks.append(_finalize_addendum_chunk(
-                        current_item_text, item_number, doc
+                        current_item_text, item_number, doc, ordinal=len(chunks) + 1
                     ))
                 current_item_text = line_stripped
                 item_number = new_item_number
@@ -152,7 +152,7 @@ def _chunk_addendum(doc: "ParsedDocument", min_tokens: int, max_tokens: int) -> 
     # Finalize last item
     if current_item_text.strip() and item_number is not None:
         chunks.append(_finalize_addendum_chunk(
-            current_item_text, item_number, doc
+            current_item_text, item_number, doc, ordinal=len(chunks) + 1
         ))
 
     # If no change items detected, return empty (will be handled by prose chunking)
@@ -165,7 +165,7 @@ def _chunk_addendum(doc: "ParsedDocument", min_tokens: int, max_tokens: int) -> 
 _current_item_text_continued = ""
 
 
-def _finalize_addendum_chunk(text: str, item_number: str, doc: "ParsedDocument") -> Chunk:
+def _finalize_addendum_chunk(text: str, item_number: str, doc: "ParsedDocument", ordinal: int = 1) -> Chunk:
     """Finalize an addendum chunk: trim, estimate tokens, create Chunk object."""
     # Trim to reasonable size
     text = text.strip()
@@ -176,12 +176,12 @@ def _finalize_addendum_chunk(text: str, item_number: str, doc: "ParsedDocument")
 
     # Merge with adjacent text if below minimum
     effective_min = max(1, 50)  # Minimum for addendum items
-    if tokens < effective_min and current_item_text_continued:
-        text = current_item_text_continued + " " + text
+    if tokens < effective_min and _current_item_text_continued:
+        text = _current_item_text_continued + " " + text
         tokens = estimate_tokens(text)
 
     # Determine doc_type from document
-    doc_type = doc.doc_types[0] if doc.doc_types else DocType.ADDENDUM
+    doc_type = doc.doc_type if doc.doc_type else DocType.ADDENDUM
 
     # Determine page info
     page_start = 1
@@ -198,22 +198,24 @@ def _finalize_addendum_chunk(text: str, item_number: str, doc: "ParsedDocument")
     if section_match:
         section = section_match.group(1).strip()
 
+    # Generate chunk_id
+    chunk_id = _make_chunk_id(doc.file_hash, ordinal, page_start, text)
+
     return Chunk(
-        chunk_id="",  # Will be assigned by chunk_document
+        chunk_id=chunk_id,
         bid_id=doc.bid_id,
         file_name=doc.file_name,
         file_hash=doc.file_hash,
         doc_type=doc_type,
-        addendum_number=item_number,
-        doc_date=None,
+        addendum_number=int(item_number) if item_number and item_number.isdigit() else None,
         page_start=page_start,
         page_end=page_end,
         section=section,
-        kind="text",
+        kind="addendum",
         text=text,
-        embed_text="",  # Will be prefix + text
-        content_hash="",
-        embedded=False,
+        token_count=tokens,
+        embed_text="",
+        ordinal=ordinal,
     )
 
 
@@ -304,7 +306,8 @@ def _chunk_prose_and_tables(
                 finalized = _finalize_chunk(
                     current_chunk_text, current_chunk_pages,
                     current_chunk_section, current_chunk_kind,
-                    doc, target_tokens, max_tokens, min_tokens, overlap_ratio
+                    doc, target_tokens, max_tokens, min_tokens, overlap_ratio,
+                    ordinal=len(chunks) + 1
                 )
                 if finalized:
                     chunks.append(finalized)
@@ -323,13 +326,14 @@ def _chunk_prose_and_tables(
                 finalized = _finalize_chunk(
                     current_chunk_text, current_chunk_pages,
                     current_chunk_section, "text",
-                    doc, target_tokens, max_tokens, min_tokens, overlap_ratio
+                    doc, target_tokens, max_tokens, min_tokens, overlap_ratio,
+                    ordinal=len(chunks) + 1
                 )
                 if finalized:
                     chunks.append(finalized)
 
             # Process table
-            table_chunks = _process_table_block(block, doc, table_max_tokens)
+            table_chunks = _process_table_block(block, doc, table_max_tokens, ordinal=len(chunks) + 1)
             chunks.extend(table_chunks)
 
             # Reset text chunk state after table
@@ -363,7 +367,8 @@ def _chunk_prose_and_tables(
         finalized = _finalize_chunk(
             current_chunk_text, current_chunk_pages,
             current_chunk_section, "text",
-            doc, target_tokens, max_tokens, min_tokens, overlap_ratio
+            doc, target_tokens, max_tokens, min_tokens, overlap_ratio,
+            ordinal=len(chunks) + 1
         )
         if finalized:
             chunks.append(finalized)
@@ -393,6 +398,7 @@ def _process_table_block(
     block: "Block",
     doc: "ParsedDocument",
     max_tokens: int,
+    ordinal: int = 1,
 ) -> List[Chunk]:
     """Process a table block into chunks.
 
@@ -453,26 +459,23 @@ def _process_table_block(
             tokens = estimate_tokens(text)
 
     # Create chunk for the table
+    chunk_id = _make_chunk_id(doc.file_hash, ordinal, page_start, text)
     chunk = Chunk(
-        chunk_id="",  # Will be assigned
+        chunk_id=chunk_id,
         bid_id=doc.bid_id,
         file_name=doc.file_name,
         file_hash=doc.file_hash,
-        doc_type=doc.doc_types[0] if doc.doc_types else DocType.SPECS,
+        doc_type=doc.doc_type if doc.doc_type else DocType.SPECS,
         addendum_number=None,
-        doc_date=None,
         page_start=page_start,
         page_end=page_end,
         section="table",
-        kind="table" if not is_kv else "key_value",
+        kind="table",
         text=text[:500] if len(text) > 500 else text,  # Limit text length
+        token_count=tokens,
         embed_text="",
-        content_hash="",
-        embedded=False,
+        ordinal=ordinal,
     )
-
-    # Assign ID and ordinal
-    # These would be set by the caller after all chunks are gathered
 
     chunks.append(chunk)
 
@@ -507,6 +510,7 @@ def _finalize_chunk(
     max_tokens: int,
     min_tokens: int,
     overlap_ratio: float,
+    ordinal: int = 1,
 ) -> Chunk | None:
     """Finalize a chunk with the given parameters.
 
@@ -537,28 +541,28 @@ def _finalize_chunk(
         return None
 
     # Determine doc_type
-    doc_type = doc.doc_types[0] if doc.doc_types else DocType.BID_PAGE
+    doc_type = doc.doc_type if doc.doc_type else DocType.BID_PAGE
 
     # Determine section path
     section_path = section[:50] if section else ""
 
     # Create the chunk
+    chunk_id = _make_chunk_id(doc.file_hash, ordinal, page_start, combined_text)
     chunk = Chunk(
-        chunk_id="",  # Assigned later
+        chunk_id=chunk_id,
         bid_id=doc.bid_id,
         file_name=doc.file_name,
         file_hash=doc.file_hash,
         doc_type=doc_type,
         addendum_number=None,
-        doc_date=None,
         page_start=page_start,
         page_end=page_end,
         section=section_path,
-        kind=kind,
+        kind=kind if kind in ("prose", "table", "addendum", "heading") else "prose",
         text=combined_text,
+        token_count=tokens,
         embed_text="",  # Will be set with make_context_prefix
-        content_hash="",
-        embedded=False,
+        ordinal=ordinal,
     )
 
     return chunk

@@ -31,10 +31,14 @@ class KeywordStore:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._conn: Optional[sqlite3.Connection] = None
         self._ensure_schema()
+        # Set row factory to return Row objects (dict-like)
+        if self._conn is not None:
+            self._conn.row_factory = sqlite3.Row
 
     def _ensure_schema(self) -> None:
         """Create the chunks table and FTS5 virtual table if they don't exist."""
         self._conn = sqlite3.connect(str(self.db_path))
+        self._conn.row_factory = sqlite3.Row
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.execute("PRAGMA synchronous=NORMAL")
 
@@ -71,8 +75,7 @@ class KeywordStore:
                 text,
                 embedded,
                 content=chunks,
-                content_rowid=rowid,
-                tokenchars='_-
+                content_rowid=rowid
             )
         """)
 
@@ -118,6 +121,7 @@ class KeywordStore:
         """Add a single chunk to both the chunks table and FTS5 index."""
         if self._conn is None:
             self._conn = sqlite3.connect(str(self.db_path))
+            self._conn.row_factory = sqlite3.Row
 
         self._conn.execute(
             """INSERT OR REPLACE INTO chunks (
@@ -149,6 +153,7 @@ class KeywordStore:
             return
         if self._conn is None:
             self._conn = sqlite3.connect(str(self.db_path))
+            self._conn.row_factory = sqlite3.Row
 
         for chunk in chunks:
             self.add_chunk(chunk)
@@ -167,6 +172,7 @@ class KeywordStore:
         """
         if self._conn is None:
             self._conn = sqlite3.connect(str(self.db_path))
+            self._conn.row_factory = sqlite3.Row
 
         # Build the FTS5 query expression
         fts_query = self._build_fts_query(query)
@@ -178,26 +184,26 @@ class KeywordStore:
         if filters:
             if filters.get("bid_ids"):
                 placeholders = ",".join(["?"] * len(filters["bid_ids"]))
-                where_clauses.append(f"chunks.bid_id IN ({placeholders})")
+                where_clauses.append(f"c.bid_id IN ({placeholders})")
                 params.extend(filters["bid_ids"])
 
             if filters.get("doc_types"):
                 placeholders = ",".join(["?"] * len(filters["doc_types"]))
-                where_clauses.append(f"chunks.doc_type IN ({placeholders})")
+                where_clauses.append(f"c.doc_type IN ({placeholders})")
                 params.extend(filters["doc_types"])
 
             if filters.get("addendum_numbers"):
                 placeholders = ",".join(["?"] * len(filters["addendum_numbers"]))
-                where_clauses.append(f"chunks.addendum_number IN ({placeholders})")
+                where_clauses.append(f"c.addendum_number IN ({placeholders})")
                 params.extend(filters["addendum_numbers"])
 
             if filters.get("file_names"):
                 placeholders = ",".join(["?"] * len(filters["file_names"]))
-                where_clauses.append(f"chunks.file_name IN ({placeholders})")
+                where_clauses.append(f"c.file_name IN ({placeholders})")
                 params.extend(filters["file_names"])
 
             if filters.get("min_addendum_number") is not None:
-                where_clauses.append("chunks.addendum_number >= ?")
+                where_clauses.append("c.addendum_number >= ?")
                 params.append(filters["min_addendum_number"])
 
         where_sql = " AND ".join(where_clauses)
@@ -275,6 +281,7 @@ class KeywordStore:
         """Delete all chunks associated with a file hash. Returns number of chunks deleted."""
         if self._conn is None:
             self._conn = sqlite3.connect(str(self.db_path))
+            self._conn.row_factory = sqlite3.Row
 
         cursor = self._conn.execute("SELECT chunk_id FROM chunks WHERE file_hash = ?", (file_hash,))
         chunk_ids = [row[0] for row in cursor]
@@ -292,6 +299,7 @@ class KeywordStore:
         """Delete all chunks associated with a bid_id. Returns number of chunks deleted."""
         if self._conn is None:
             self._conn = sqlite3.connect(str(self.db_path))
+            self._conn.row_factory = sqlite3.Row
 
         cursor = self._conn.execute("SELECT chunk_id FROM chunks WHERE bid_id = ?", (bid_id,))
         chunk_ids = [row[0] for row in cursor]
@@ -309,6 +317,7 @@ class KeywordStore:
         """Get a single chunk by chunk_id."""
         if self._conn is None:
             self._conn = sqlite3.connect(str(self.db_path))
+            self._conn.row_factory = sqlite3.Row
 
         cursor = self._conn.execute(
             "SELECT * FROM chunks WHERE chunk_id = ?",
@@ -330,6 +339,7 @@ class KeywordStore:
         """
         if self._conn is None:
             self._conn = sqlite3.connect(str(self.db_path))
+            self._conn.row_factory = sqlite3.Row
 
         if chunk_ids is None:
             cursor = self._conn.execute(
@@ -383,6 +393,7 @@ class FileRegistry:
     def _ensure_schema(self) -> None:
         """Create the file_registry table if it doesn't exist."""
         self._conn = sqlite3.connect(str(self.db_path))
+        self._conn.row_factory = sqlite3.Row
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.execute("PRAGMA synchronous=NORMAL")
 
@@ -406,6 +417,7 @@ class FileRegistry:
         """Check if a file with this hash is already indexed with the given model."""
         if self._conn is None:
             self._conn = sqlite3.connect(str(self.db_path))
+            self._conn.row_factory = sqlite3.Row
 
         cursor = self._conn.execute(
             "SELECT embed_model FROM file_registry WHERE file_hash = ?",
@@ -431,6 +443,7 @@ class FileRegistry:
         """Update or insert a file record in the registry."""
         if self._conn is None:
             self._conn = sqlite3.connect(str(self.db_path))
+            self._conn.row_factory = sqlite3.Row
 
         self._conn.execute(
             """INSERT OR REPLACE INTO file_registry (
@@ -455,6 +468,7 @@ class FileRegistry:
         """Get a file record by hash."""
         if self._conn is None:
             self._conn = sqlite3.connect(str(self.db_path))
+            self._conn.row_factory = sqlite3.Row
 
         cursor = self._conn.execute(
             "SELECT * FROM file_registry WHERE file_hash = ?",

@@ -38,7 +38,7 @@ except ImportError:
 class QdrantVectorStore:
     """Qdrant vector store for chunk embeddings.
 
-    Uses local embedded mode (single-process). Collection "rfp_chunks"
+    Uses local embedded mode (single-process) or remote server. Collection "rfp_chunks"
     holds 2048-dim vectors with cosine distance. Payload fields enable
     fast filtering by bid_id, doc_type, addendum_number, etc. The
     actual chunk text stays in the SQLite keyword store; vectors alone
@@ -46,19 +46,26 @@ class QdrantVectorStore:
     """
 
     def __init__(self, host: str = "localhost", port: int = 6333,
-                 collection_name: str = "rfp_chunks", dim: int = 2048):
+                 collection_name: str = "rfp_chunks", dim: int = 2048,
+                 path: Optional[str] = None):
         self.host = host
         self.port = port
         self.collection_name = collection_name
         self.dim = dim
+        self.path = path
         self.client: Any = None
         self._collection_initialized = False
 
         if QDRANT_AVAILABLE:
             try:
-                self.client = qdrant_client.QdrantClient(
-                    host=host, port=port,
-                )
+                if path:
+                    # Embedded mode - runs in-process
+                    self.client = qdrant_client.QdrantClient(path=path)
+                else:
+                    # Remote server mode
+                    self.client = qdrant_client.QdrantClient(
+                        host=host, port=port,
+                    )
             except Exception:
                 self.client = None
 

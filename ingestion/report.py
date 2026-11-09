@@ -18,8 +18,12 @@ from schemas import (
     IngestionReport,
     FileReport,
     ParsedDocument,
+    Page,
     DocType,
+    DetectionResult,
 )
+
+from ingestion.detect import detect as detect_file
 
 
 def ingest_folder(
@@ -79,6 +83,7 @@ def ingest_folder(
 
     # 2. Sort deterministically
     files.sort(key=lambda p: (p.name.lower(), p.suffix.lower()))
+    print(f"DEBUG: Found {len(files)} files to process: {[f.name for f in files]}")
 
     # 3. Check registry for unchanged files (simplified: no actual registry check
     # in this standalone version; would check file_hash against stored registry)
@@ -94,6 +99,7 @@ def ingest_folder(
     needs_ocr_pages = 0
 
     for filepath in files:
+        print(f"DEBUG: Processing {filepath.name}")
         # Compute file hash
         try:
             file_bytes = filepath.read_bytes()
@@ -113,17 +119,28 @@ def ingest_folder(
         file_needs_ocr = 0
 
         try:
-            # Step 4a: Detect file type
-            # In a full implementation, would use the detection module
-            # For now, classify by extension
-            if filepath.suffix.lower() == ".pdf":
-                doc_type = DocType.RFP  # Simplified
-                addendum_number = None
-            elif filepath.suffix.lower() in (".html", ".htm"):
-                doc_type = DocType.BID_PAGE
-                addendum_number = None
-            else:
-                doc_type = DocType.OTHER
+            # Step 4a: Detect file type using detection module
+            # Read first page text for content-based detection
+            first_page_text = None
+            try:
+                if filepath.suffix.lower() == ".pdf":
+                    import pdfplumber
+                    with pdfplumber.open(filepath) as pdf:
+                        if pdf.pages:
+                            first_page_text = pdf.pages[0].extract_text() or ""
+                elif filepath.suffix.lower() in (".html", ".htm"):
+                    first_page_text = filepath.read_text(encoding="utf8", errors="replace")[:5000]
+            except Exception:
+                pass
+
+            detection_result: DetectionResult = detect_file(filepath, first_page_text)
+            doc_type = detection_result.doc_type
+            addendum_number = detection_result.addendum_number
+            doc_date = detection_result.doc_date
+            file_warnings.extend(detection_result.warnings)
+            print(f"DEBUG: Detection result for {filepath.name}: doc_type={doc_type}, addendum_number={addendum_number}, doc_date={doc_date}, warnings={detection_result.warnings}")
+
+            if doc_type == "other" and filepath.suffix.lower() not in (".pdf", ".html", ".htm"):
                 file_status = "skipped"
                 file_warnings.append(f"Unsupported extension classified as 'other'")
 
@@ -131,8 +148,10 @@ def ingest_folder(
                 # Step 4b: Parse
                 # Simplified parsing - in full use pdf.py or html.py
                 try:
-                    parsed_doc = _simple_parse(filepath, doc_type)
+                    parsed_doc = _simple_parse(filepath, doc_type, addendum_number, doc_date)
+                    print(f"DEBUG: Parse result for {filepath.name}: parsed_doc={parsed_doc is not None}, pages={len(parsed_doc.pages) if parsed_doc else 0}")
                 except Exception as e:
+                    print(f"DEBUG: Parse exception for {filepath.name}: {e}")
                     parsed_doc = ParsedDocument(
                         file_name=filepath.name,
                         file_hash=file_hash,
@@ -156,6 +175,7 @@ def ingest_folder(
 
                 # Step 4d: Tag metadata
                 # bid_id already set; other metadata from detection
+                cleaned_doc.bid_id = bid_id
                 # For now, just ensure title is set
                 if not cleaned_doc.title:
                     cleaned_doc.title = _extract_title_from_name(filepath.name)
@@ -205,7 +225,7 @@ def ingest_folder(
                     tables=0,
                     empty_pages=0,
                     needs_ocr_pages=0,
-                    warnings=[file_warnings] if file_warnings else [],
+                    warnings=file_warnings,
                     error=str(e),
                 )
             )
@@ -241,21 +261,64 @@ def ingest_folder(
     return parsed_docs, report
 
 
-def _simple_parse(filepath: Path, doc_type: DocType) -> ParsedDocument:
+def _simple_parse(filepath: Path, doc_type: str, addendum_number: int | None = None, doc_date=None) -> ParsedDocument:
     """Simplified parsing for the ingestion pipeline.
 
     In a full implementation, would use pdf.py or html.py from service 06.
+    Uses real pdfplumber and BeautifulSoup parsing when available.
     """
+    import sys
+    from pathlib import Path
+
     file_name = filepath.name
     file_hash = _file_hash(filepath.read_bytes())
 
-    # Create a minimal parsed document based on doc type
-    if doc_type == DocType.RFP:
-        # PDF RFP: minimal blocks
+    # Try to use real parsers (pdfplumber for PDF, BeautifulSoup for HTML)
+    parsed_doc = None
+    try:
+        from ingestion.parsers.pdf import parse_pdf
+        from ingestion.parsers.html import parse_html
+
+        # Use the appropriate parser based on file extension
+        if filepath.suffix.lower() == ".pdf":
+            parsed_doc = parse_pdf(filepath)
+        elif filepath.suffix.lower() in (".html", ".htm"):
+            parsed_doc = parse_html(filepath)
+        else:
+            parsed_doc = None
+    except Exception:
+        # Catch ALL exceptions from real parsers and fall back
+        parsed_doc = None
+
+    if parsed_doc:
+        # Override with detection results
+        parsed_doc.doc_type = doc_type
+        parsed_doc.addendum_number = addendum_number
+        if doc_date:
+            parsed_doc.doc_date = doc_date
+
+        # Ensure title is set
+        if not parsed_doc.title:
+            parsed_doc.title = _extract_title_from_name(file_name)
+
+        # Apply char count check: <30 chars → "partial", never "ok"
+        total_chars = sum(len(b.text) for p in parsed_doc.pages for b in p.blocks)
+        if total_chars < 30:
+            parsed_doc.warnings.append("partial - very little text extracted (<30 chars)")
+
+        return parsed_doc
+
+    # Fallback to minimal parsed document based on doc type
+    if doc_type == "rfp":
         blocks = [Block(kind="paragraph", text="RFP document placeholder", page=1, level=None)]
-    elif doc_type == DocType.BID_PAGE:
-        # HTML bid page: minimal blocks
+    elif doc_type == "bid_page":
         blocks = [Block(kind="key_value", text="Bid Information: placeholder", page=1, level=None)]
+    elif doc_type == "addendum":
+        blocks = [Block(kind="paragraph", text=f"Addendum {addendum_number} placeholder", page=1, level=None)]
+    elif doc_type == "affidavit":
+        blocks = [Block(kind="paragraph", text="Affidavit placeholder", page=1, level=None)]
+    elif doc_type == "spec":
+        blocks = [Block(kind="paragraph", text="Specification placeholder", page=1, level=None)]
     else:
         blocks = [Block(kind="paragraph", text="Document placeholder", page=1, level=None)]
 
@@ -267,12 +330,21 @@ def _simple_parse(filepath: Path, doc_type: DocType) -> ParsedDocument:
         flags=[],
     )
 
+    # Determine file_kind from extension
+    if filepath.suffix.lower() == ".pdf":
+        file_kind = "pdf"
+    elif filepath.suffix.lower() in (".html", ".htm"):
+        file_kind = "html"
+    else:
+        file_kind = "other"
+
     return ParsedDocument(
         file_name=file_name,
         file_hash=file_hash,
+        file_kind=file_kind,
         doc_type=doc_type,
-        addendum_number=None,
-        doc_date=None,
+        addendum_number=addendum_number,
+        doc_date=doc_date,
         title=_extract_title_from_name(filepath.name),
         pages=[page],
         warnings=[],

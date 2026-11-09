@@ -9,8 +9,8 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Load .env file
-env_path = Path(__file__).parent / ".env"
+# Load .env file from project root
+env_path = Path(__file__).parent.parent / ".env"
 load_dotenv(dotenv_path=env_path)
 
 # NVIDIA API configuration
@@ -117,3 +117,70 @@ LOGS_DIR = PROJECT_ROOT / "logs"
 # Ensure directories exist
 for d in [DATA_DIR, STORAGE_DIR, PARSSED_DIR, OUTPUTS_DIR, TRACES_DIR, LOGS_DIR]:
     d.mkdir(parents=True, exist_ok=True)
+
+
+class Settings:
+    """Settings container for easy access."""
+    def __init__(self):
+        self.NVIDIA_API_KEY = NVIDIA_API_KEY
+        self.NVIDIA_LLM_KEY = NVIDIA_LLM_KEY
+        self.NVIDIA_EMBED_KEY = NVIDIA_EMBED_KEY
+        self.NVIDIA_RERANK_KEY = NVIDIA_RERANK_KEY
+        self.NVIDIA_BASE_URL = NVIDIA_BASE_URL
+        self.RERANK_URL = RERANK_URL
+        self.LLM_MODEL = LLM_MODEL
+        self.EMBED_MODEL = EMBED_MODEL
+        self.RERANK_MODEL = RERANK_MODEL
+        self.MAX_RPM = MAX_RPM
+        self.LLM_CONCURRENCY = LLM_CONCURRENCY
+        self.EMBED_BATCH_SIZE = EMBED_BATCH_SIZE
+        self.RERANK_BATCH_SIZE = RERANK_BATCH_SIZE
+        self.MAX_LLM_CALLS_PER_RUN = MAX_LLM_CALLS_PER_RUN
+        self.CHUNK_TARGET_TOKENS = CHUNK_TARGET_TOKENS
+        self.CHUNK_MAX_TOKENS = CHUNK_MAX_TOKENS
+        self.CHUNK_MIN_TOKENS = CHUNK_MIN_TOKENS
+        self.CHUNK_OVERLAP_RATIO = CHUNK_OVERLAP_RATIO
+        self.DENSE_TOP_N = DENSE_TOP_N
+        self.BM25_TOP_N = BM25_TOP_N
+        self.RERANK_TOP_N = RERANK_TOP_N
+        self.RRF_K = RRF_K
+        self.FINAL_TOP_K = FINAL_TOP_K
+        self.MAX_RETRIES_PER_FIELD = MAX_RETRIES_PER_FIELD
+        self.EVIDENCE_CHUNKS_PER_FIELD = EVIDENCE_CHUNKS_PER_FIELD
+        self.NODE_TIMEOUT_S = NODE_TIMEOUT_S
+        self.QA_TOP_K = QA_TOP_K
+        self.QA_VERIFY_ENABLED = QA_VERIFY_ENABLED
+        self.SUMMARY_MIN_SENTENCES = SUMMARY_MIN_SENTENCES
+        self.SUMMARY_MAX_SENTENCES = SUMMARY_MAX_SENTENCES
+        self.LLM_MODEL_EXTRACT = LLM_MODEL_EXTRACT
+        self.LLM_MODEL_VALIDATE = LLM_MODEL_VALIDATE
+        self.LLM_MODEL_RECONCILE = LLM_MODEL_RECONCILE
+        self.LLM_MODEL_QA = LLM_MODEL_QA
+        self.PROJECT_ROOT = PROJECT_ROOT
+        self.DATA_DIR = DATA_DIR
+        self.STORAGE_DIR = STORAGE_DIR
+        self.PARSSED_DIR = PARSSED_DIR
+        self.OUTPUTS_DIR = OUTPUTS_DIR
+        self.TRACES_DIR = TRACES_DIR
+        self.LOGS_DIR = LOGS_DIR
+
+    def get(self, key: str, default=None):
+        """Allow dict-style access with lowercase keys."""
+        # Convert to uppercase for attribute lookup
+        attr = key.upper()
+        return getattr(self, attr, default)
+
+    def __getitem__(self, key: str):
+        """Allow dict-style access with lowercase keys."""
+        return self.get(key)
+
+
+_settings_instance = None
+
+
+def get_settings() -> Settings:
+    """Get the global settings instance."""
+    global _settings_instance
+    if _settings_instance is None:
+        _settings_instance = Settings()
+    return _settings_instance

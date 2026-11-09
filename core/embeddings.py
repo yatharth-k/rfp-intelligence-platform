@@ -29,6 +29,9 @@ class EmbeddingClient:
                  api_key: str | None = None,
                  batch_size: int = 16):
         self.model = model
+        # Ensure embed_url points to the embeddings endpoint
+        if not embed_url.endswith("/embeddings"):
+            embed_url = embed_url.rstrip("/") + "/embeddings"
         self.embed_url = embed_url
         self.api_key = api_key or ""
         self.batch_size = batch_size
@@ -63,10 +66,8 @@ class EmbeddingClient:
             "model": self.model,
             "input": texts,
             "encoding_format": "float",
-            "extra_body": {
-                "input_type": input_type,
-                "truncate": "END",
-            },
+            "input_type": input_type,
+            "truncate": "END",
         }
 
         try:

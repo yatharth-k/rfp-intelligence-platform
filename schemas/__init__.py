@@ -28,6 +28,9 @@ class Block(BaseModel):
     bbox: Optional[List[float]] = Field(
         None, description="Bounding box [x1, y1, x2, y2] if available"
     )
+    level: Optional[int] = Field(
+        None, description="Heading level (1-based, None for non-heading blocks)"
+    )
 
 
 class Table(BaseModel):
@@ -54,13 +57,16 @@ class Table(BaseModel):
 class Page(BaseModel):
     """A page of a parsed document."""
     number: int = Field(..., ge=1, description="1-based page number")
-    blocks: List[Dict[str, Any]] = Field(
+    blocks: List["Block"] = Field(
         default_factory=list,
         description="Text blocks on the page with their content and metadata"
     )
-    tables: List[Dict[str, Any]] = Field(
+    tables: List["Table"] = Field(
         default_factory=list,
         description="Tables found on the page"
+    )
+    char_count: int = Field(
+        0, description="Total character count of blocks on this page"
     )
     empty: bool = Field(
         False,
@@ -69,6 +75,10 @@ class Page(BaseModel):
     needs_ocr: bool = Field(
         False,
         description="Whether the page likely requires OCR"
+    )
+    flags: List[str] = Field(
+        default_factory=list,
+        description="Page flags (empty, needs_ocr, etc.)"
     )
     warnings: List[str] = Field(
         default_factory=list,
@@ -82,7 +92,7 @@ class ParsedDocument(BaseModel):
     file_kind: Literal["pdf", "html", "text", "other"] = Field(
         ..., description="Type of file detected"
     )
-    doc_type: Literal["rfp", "addendum", "spec", "affidavit", "other"] = Field(
+    doc_type: Literal["rfp", "addendum", "spec", "affidavit", "other", "bid_page"] = Field(
         ..., description="Document type from detection"
     )
     addendum_number: Optional[int] = Field(
@@ -100,8 +110,14 @@ class ParsedDocument(BaseModel):
     file_hash: str = Field(
         ..., description="SHA-256 hash of the file bytes"
     )
+    bid_id: Optional[str] = Field(
+        None, description="Bid ID this document belongs to"
+    )
     n_chunks: int = Field(
         0, description="Number of chunks this document was split into"
+    )
+    chunks: Optional[List["Chunk"]] = Field(
+        None, description="Chunk objects for indexing"
     )
     warnings: List[str] = Field(
         default_factory=list,
@@ -124,7 +140,7 @@ class Chunk(BaseModel):
     section: Optional[str] = Field(
         None, description="Document section heading if applicable"
     )
-    doc_type: Literal["rfp", "addendum", "spec", "affidavit", "other"] = Field(
+    doc_type: Literal["rfp", "addendum", "spec", "affidavit", "other", "bid_page"] = Field(
         ..., description="Document type"
     )
     addendum_number: Optional[int] = Field(
@@ -202,7 +218,7 @@ class FieldSpec(BaseModel):
     description: str = Field(
         ..., description="Human-readable description of the field"
     )
-    doc_types: List[Literal["rfp", "addendum", "spec", "affidavit"]] = Field(
+    doc_types: List[Literal["rfp", "addendum", "spec", "affidavit", "bid_page"]] = Field(
         ..., description="Document types this field applies to"
     )
     required: bool = Field(
@@ -231,7 +247,7 @@ class SynonymGroup(BaseModel):
     synonyms: List[str] = Field(
         default_factory=list, description="List of synonyms/alternatives"
     )
-    doc_types: List[Literal["rfp", "addendum", "spec", "affidavit"]] = Field(
+    doc_types: List[Literal["rfp", "addendum", "spec", "affidavit", "bid_page"]] = Field(
         ..., description="Document types this applies to"
     )
 
@@ -260,7 +276,7 @@ class QueryRewrite(BaseModel):
 
 
 # Type aliases and additional schemas
-DocType = Literal["rfp", "addendum", "spec", "affidavit", "other"]
+DocType = Literal["rfp", "addendum", "spec", "affidavit", "other", "bid_page"]
 
 
 # Additional data schemas used across the codebase
@@ -268,6 +284,9 @@ DocType = Literal["rfp", "addendum", "spec", "affidavit", "other"]
 
 class DetectionResult(BaseModel):
     """Result of detecting document type and metadata."""
+    file_kind: Literal["pdf", "html", "text", "other"] = Field(
+        ..., description="Type of file detected"
+    )
     doc_type: DocType = Field(..., description="Detected document type")
     addendum_number: Optional[int] = Field(
         None, description="Addendum number if applicable"
@@ -277,6 +296,9 @@ class DetectionResult(BaseModel):
     )
     title: Optional[str] = Field(
         None, description="Title from first heading/metadata"
+    )
+    warnings: List[str] = Field(
+        default_factory=list, description="Warnings from detection"
     )
 
 
